@@ -1,0 +1,2787 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1117">
+<meta name="color-scheme" content="dark">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="AutoTrack">
+<meta name="format-detection" content="telephone=no">
+<link rel="manifest" href="app.webmanifest?v=5">
+<link rel="apple-touch-icon" sizes="180x180" href="touch-icon-180.png?v=5">
+<link rel="apple-touch-icon" href="apple-touch-icon.png?v=5">
+<link rel="icon" href="favicon.ico?v=5" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png?v=5">
+<link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png?v=5">
+<link rel="icon" type="image/png" sizes="192x192" href="app-icon-192.png?v=5">
+<title>AutoTrack — Gestiunea costurilor auto</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222536;
+    --border: #2e3148;
+    --accent: #4f8ef7;
+    --accent2: #6dd5a8;
+    --accent-strong: #2f6bdc;
+    --danger: #e05c6e;
+    --warn: #f5a623;
+    --text: #e8eaf0;
+    --muted: #9aa3b2;
+    --fuel: #4f8ef7;
+    --service: #f5a623;
+    --insurance: #6dd5a8;
+    --other: #b07dff;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --font: 'Inter', system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--font); min-height: 100vh; }
+
+  /* Layout */
+  .app { display: flex; min-height: 100vh; }
+  .sidebar { width: 220px; background: var(--surface); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 24px 0; flex-shrink: 0; }
+  .main { flex: 1; overflow: auto; padding: 32px; }
+
+  /* Sidebar */
+  .logo { padding: 0 20px 24px; font-size: 18px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); display: flex; align-items: center; gap: 8px; }
+  .logo-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; font-size: 14px; }
+  .nav-item { padding: 10px 20px; cursor: pointer; border-radius: 0; font-size: 13.5px; color: var(--muted); display: flex; align-items: center; gap: 10px; transition: all .15s; border-left: 3px solid transparent; }
+  .nav-item:hover { color: var(--text); background: var(--surface2); }
+  .nav-item.active { color: var(--accent); background: rgba(79,142,247,.08); border-left-color: var(--accent); }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-footer { margin-top: auto; padding: 16px 20px; border-top: 1px solid var(--border); }
+
+  /* Vehicle selector */
+  .vehicle-selector { padding: 12px 20px 20px; border-bottom: 1px solid var(--border); margin-bottom: 8px; }
+  .vehicle-selector label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .8px; display: block; margin-bottom: 6px; }
+  .vehicle-select { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; outline: none; }
+  .btn-add-vehicle { margin-top: 6px; width: 100%; padding: 6px; background: transparent; border: 1px dashed var(--border); color: var(--muted); border-radius: var(--radius-sm); cursor: pointer; font-size: 12px; transition: .15s; }
+  .btn-add-vehicle:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* Header */
+  .page-header { margin-bottom: 28px; }
+  .page-title { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
+  .page-sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+
+  /* Cards */
+  .cards-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 28px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .card-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; margin-bottom: 8px; }
+  .card-value { font-size: 26px; font-weight: 700; letter-spacing: -1px; }
+  .card-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .card-accent { border-top: 3px solid var(--accent); }
+  .card-green { border-top: 3px solid var(--accent2); }
+  .card-warn { border-top: 3px solid var(--warn); }
+  .card-danger { border-top: 3px solid var(--danger); }
+
+  /* Sections row */
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+  @media (max-width: 900px) { .row { grid-template-columns: 1fr; } }
+
+  /* Chart */
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .chart-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .chart-wrap { position: relative; height: 180px; }
+  canvas { width: 100% !important; }
+
+  /* Expense list */
+  .expense-list { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .expense-list-header { padding: 16px 20px; font-size: 14px; font-weight: 600; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .expense-item { padding: 12px 20px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--border); transition: background .1s; }
+  .expense-item:last-child { border-bottom: none; }
+  .expense-item:hover { background: var(--surface2); }
+  .expense-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .expense-info { flex: 1; }
+  .expense-name { font-size: 14px; font-weight: 500; }
+  .expense-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .expense-amount { font-size: 15px; font-weight: 600; }
+  .expense-delete { background: none; border: none; color: var(--muted); cursor: pointer; padding: 4px; font-size: 16px; border-radius: 4px; transition: .1s; }
+  .expense-delete:hover { color: var(--danger); background: rgba(224,92,110,.1); }
+  .empty-state { padding: 40px 20px; text-align: center; color: var(--muted); font-size: 14px; }
+
+  /* Alert banner */
+  .alert-banner { background: rgba(245,166,35,.1); border: 1px solid rgba(245,166,35,.3); border-radius: var(--radius); padding: 14px 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; font-size: 14px; }
+  .alert-banner.hidden { display: none; }
+
+  /* Buttons */
+  .btn { padding: 9px 18px; border-radius: var(--radius-sm); font-size: 13.5px; font-weight: 500; cursor: pointer; border: none; transition: .15s; }
+  .btn-primary { background: var(--accent-strong); color: #fff; }
+  .btn-primary:hover { background: #3a7ce8; }
+  .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .btn-secondary:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(3px); }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; width: 420px; max-width: 95vw; padding: 28px; }
+  .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .form-group { margin-bottom: 16px; }
+  .form-label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; display: block; margin-bottom: 6px; }
+  .form-input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 12px; border-radius: var(--radius-sm); font-size: 14px; outline: none; transition: border .15s; }
+  .form-input:focus { border-color: var(--accent); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 24px; }
+  select.form-input { cursor: pointer; }
+
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; background: var(--surface2); border-radius: var(--radius-sm); padding: 4px; margin-bottom: 20px; width: fit-content; }
+  .tab { padding: 8px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; color: var(--muted); transition: .15s; border: none; background: none; }
+  .tab.active { background: var(--surface); color: var(--text); font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,.3); }
+
+
+  /* Page sections */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  /* Timeline (pagina principală) */
+  .timeline { position: relative; padding-left: 26px; }
+  .timeline::before { content: ''; position: absolute; left: 8px; top: 8px; bottom: 8px; width: 2px; background: var(--border); border-radius: 1px; }
+  .tl-day { position: relative; display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; margin: 20px 0 8px; }
+  .tl-day:first-child { margin-top: 4px; }
+  .tl-day::before { content: ''; position: absolute; left: -22px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); border: 2px solid var(--muted); box-sizing: border-box; }
+  .tl-day.today::before { border-color: var(--accent); background: var(--accent); }
+  .tl-day-title { font-size: 13px; font-weight: 700; }
+  .tl-day-sum { font-size: 12px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; }
+  .tl-item { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 14px; margin-bottom: 8px; display: flex; align-items: center; gap: 12px; transition: border-color .15s; }
+  .tl-item:hover { border-color: var(--dot, var(--accent)); }
+  .tl-item::before { content: ''; position: absolute; left: -22px; top: 50%; width: 10px; height: 10px; margin-top: -5px; border-radius: 50%; background: var(--dot, var(--muted)); box-shadow: 0 0 0 3px var(--bg); }
+  .tl-ico { width: 34px; height: 34px; border-radius: 9px; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+  .tl-main { flex: 1; min-width: 0; }
+  .tl-title { font-size: 14px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-meta { font-size: 12px; color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tl-amount { font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .tl-del { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px 6px; border-radius: 4px; opacity: 0; transition: .1s; }
+  .tl-item:hover .tl-del { opacity: 1; }
+  .tl-del:hover { color: var(--danger); background: rgba(224,92,110,.1); }
+  .tl-upcoming { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .tl-upcoming-title { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .7px; margin-right: 4px; }
+  .tl-chip { padding: 6px 12px; border-radius: 999px; border: 1px solid var(--chipc, var(--border)); font-size: 13px; cursor: pointer; display: inline-flex; gap: 6px; align-items: center; background: transparent; color: var(--text); font-family: inherit; }
+  .tl-chip strong { color: var(--chipc, var(--text)); font-weight: 600; }
+  .tl-chip:hover { background: var(--surface); }
+  .main { padding-bottom: 100px; }
+  #statsCards { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 22px; }
+  #statsCards .card { padding: 12px 14px; }
+  #statsCards .card-label { font-size: 12px; margin-bottom: 4px; }
+  #statsCards .card-value { font-size: 19px; letter-spacing: -.4px; white-space: nowrap; }
+  #statsCards .card-sub { font-size: 12px; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  details.charts-fold { margin-top: 28px; }
+  details.charts-fold > summary { cursor: pointer; color: var(--muted); font-size: 13px; padding: 8px 0; user-select: none; }
+  details.charts-fold > summary:hover { color: var(--text); }
+  details.charts-fold[open] > summary { margin-bottom: 12px; }
+
+  /* Buton unic de adăugare */
+  .fab { position: fixed; right: 28px; bottom: 28px; width: 56px; height: 56px; border-radius: 50%; border: none; background: var(--accent); color: #fff; font-size: 30px; line-height: 1; cursor: pointer; box-shadow: 0 6px 20px rgba(79,142,247,.45); z-index: 50; transition: transform .15s, background .15s; display: flex; align-items: center; justify-content: center; padding-bottom: 3px; }
+  .fab:hover { background: #3a7ce8; transform: scale(1.07); }
+  .chooser-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .chooser-btn { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px; text-align: left; cursor: pointer; color: var(--text); display: flex; flex-direction: column; gap: 3px; transition: .15s; font-family: inherit; }
+  .chooser-btn:hover { border-color: var(--accent); background: rgba(79,142,247,.07); }
+  .chooser-ico { font-size: 22px; }
+  .chooser-name { font-size: 14px; font-weight: 600; }
+  .chooser-sub { font-size: 12px; color: var(--muted); }
+
+  /* Fuel bar chart bars */
+  .bar-chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; padding-bottom: 4px; }
+  .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; height: 100%; justify-content: flex-end; }
+  .bar { width: 100%; border-radius: 4px 4px 0 0; min-height: 4px; transition: height .3s; }
+  .bar-label { font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .bar-val { font-size: 12px; color: var(--text); font-weight: 600; }
+
+  /* Donut */
+  .donut-wrap { display: flex; align-items: center; gap: 20px; }
+  .donut-legend { display: flex; flex-direction: column; gap: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Settings */
+  .settings-section { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; margin-bottom: 20px; }
+  .settings-title { font-size: 14px; font-weight: 600; margin-bottom: 16px; color: var(--text); }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-row span { color: var(--muted); font-size: 12px; }
+
+  /* KM odometer display */
+  .km-display { font-variant-numeric: tabular-nums; }
+  /* ── Telefon / PWA ── */
+  .bottom-nav { display: none; }
+  html { -webkit-text-size-adjust: 100%; }
+  body { -webkit-tap-highlight-color: transparent; }
+  @media (hover: none) {
+    .tl-del { opacity: 1 !important; }
+    .expense-delete, .tl-del { min-height: 40px; min-width: 36px; }
+  }
+  /* câmpurile de dată/oră din iOS au lățime proprie și depășeau coloana */
+  .form-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+  .form-row > *, .form-group { min-width: 0; }
+  input[type="date"].form-input, input[type="time"].form-input, input[type="month"].form-input { min-width: 0; max-width: 100%; -webkit-appearance: none; appearance: none; min-height: 42px; text-align: left; display: block; }
+  input[type="date"].form-input::-webkit-date-and-time-value, input[type="time"].form-input::-webkit-date-and-time-value { text-align: left; min-height: 1.2em; }
+  @media (max-width: 700px) {
+    .app { flex-direction: column; }
+    .sidebar { width: 100%; flex-direction: row; align-items: center; padding: calc(env(safe-area-inset-top) + 8px) 14px 8px; border-right: none; border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 40; gap: 10px; }
+    .sidebar nav, .sidebar .btn-add-vehicle, .sidebar .vehicle-selector label { display: none; }
+    .logo { padding: 0; font-size: 16px; }
+    .vehicle-selector { padding: 0; border: none; margin: 0 0 0 auto; flex: 1; min-width: 0; }
+    .vehicle-select { font-size: 16px; padding: 6px 8px; }
+    .main { padding: 16px 14px calc(150px + env(safe-area-inset-bottom)); overflow: visible; }
+    .page-title { font-size: 20px; }
+    .page-header { margin-bottom: 18px; }
+    .cards-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+    .card { padding: 14px; }
+    .card-value { font-size: 20px; }
+    .bottom-nav { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; background: var(--surface); border-top: 1px solid var(--border); padding: 4px 4px calc(env(safe-area-inset-bottom) + 4px); }
+    .bottom-nav button { flex: 1; background: none; border: none; color: var(--muted); font: inherit; font-size: 12px; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; cursor: pointer; }
+    .bottom-nav button span { font-size: 20px; line-height: 1; }
+    .bottom-nav button.active { color: var(--accent); }
+    .fab { right: 16px; bottom: calc(env(safe-area-inset-bottom) + 72px); }
+    .modal-overlay { align-items: flex-end; }
+    .modal { width: 100%; max-width: 100%; border-radius: 18px 18px 0 0; padding: 20px 16px calc(env(safe-area-inset-bottom) + 20px); max-height: 92vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    .form-input, select.form-input { font-size: 16px; }
+    .tabs { max-width: 100%; overflow-x: auto; }
+    .expense-item { padding: 12px 14px; }
+    .expense-list-header { padding: 14px; }
+    .chart-card { padding: 14px; overflow-x: auto; }
+    table { display: block; overflow-x: auto; }
+  }
+
+
+  .rp-tabs { max-width: 100%; overflow-x: auto; -webkit-overflow-scrolling: touch; flex-wrap: nowrap; scrollbar-width: none; }
+  .rp-tabs::-webkit-scrollbar { display: none; }
+  .rp-tabs .tab { flex: 0 0 auto; white-space: nowrap; }
+  .rp-bars { display: flex; align-items: flex-end; gap: 3px; height: 130px; }
+  .rp-col { flex: 1; min-width: 0; height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: stretch; }
+  .rp-pair { flex: 1; display: flex; align-items: flex-end; gap: 1px; }
+  .rp-bar { flex: 1; border-radius: 3px 3px 0 0; min-width: 2px; }
+  .rp-lab { height: 16px; font-size: 12px; color: var(--muted); text-align: center; white-space: nowrap; overflow: visible; margin-top: 4px; }
+
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .form-input:focus-visible, .vehicle-select:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon">🚗</div>
+      AutoTrack
+    </div>
+
+    <div class="vehicle-selector">
+      <label for="vehicleSelect">Vehicul activ</label>
+      <select class="vehicle-select" id="vehicleSelect" onchange="switchVehicle(this.value)"></select>
+      <button class="btn-add-vehicle" onclick="openModal('vehicle')">+ Adaugă vehicul</button>
+    </div>
+
+    <nav>
+      <div class="nav-item active" data-page="dashboard" onclick="showPage('dashboard', this)">
+        <span class="nav-icon">🕒</span> Cronologie
+      </div>
+      <div class="nav-item" data-page="fuel" onclick="showPage('fuel', this)">
+        <span class="nav-icon">⛽</span> Alimentări
+      </div>
+      <div class="nav-item" data-page="expenses" onclick="showPage('expenses', this)">
+        <span class="nav-icon">💳</span> Cheltuieli
+      </div>
+      <div class="nav-item" data-page="income" onclick="showPage('income', this)">
+        <span class="nav-icon">💵</span> Venituri
+      </div>
+      <div class="nav-item" id="nav-hours" data-page="hours" onclick="showPage('hours', this)">
+        <span class="nav-icon">⏱️</span> Ore lucrate
+      </div>
+      <div class="nav-item" id="nav-documents" data-page="documents" onclick="showPage('documents', this)">
+        <span class="nav-icon">📄</span> Documente
+      </div>
+      <div class="nav-item" data-page="reports" onclick="showPage('reports', this)">
+        <span class="nav-icon">📈</span> Rapoarte
+      </div>
+      <div class="nav-item" data-page="settings" onclick="showPage('settings', this)">
+        <span class="nav-icon">⚙️</span> Setări
+      </div>
+    </nav>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap">
+        <div>
+          <div class="page-title">Cronologie</div>
+          <div class="page-sub" id="dashSub">Monitorizare costuri vehicul</div>
+        </div>
+        <button class="btn btn-primary" onclick="openModal('chooser')">+ Adaugă</button>
+      </div>
+
+      <div class="alert-banner hidden" id="revisionAlert">
+        <span style="font-size:20px">⚠️</span>
+        <div id="revisionAlertText"></div>
+      </div>
+
+      <div class="cards-grid" id="statsCards">
+        <div class="card card-accent">
+          <div class="card-label">Cost total</div>
+          <div class="card-value" id="statTotal">0 lei</div>
+          <div class="card-sub">toate cheltuielile</div>
+        </div>
+        <div class="card card-green">
+          <div class="card-label">Consum mediu</div>
+          <div class="card-value" id="statConsumption">— L</div>
+          <div class="card-sub">per 100 km</div>
+        </div>
+        <div class="card card-warn">
+          <div class="card-label">Cost per km</div>
+          <div class="card-value" id="statCostKm">— lei</div>
+          <div class="card-sub">total împărțit la km</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Km parcurși</div>
+          <div class="card-value km-display" id="statKm">0 km</div>
+          <div class="card-sub" id="statLastFuel">nicio alimentare</div>
+        </div>
+        <div class="card" id="dashProfitCard">
+          <div class="card-label">Profit net</div>
+          <div class="card-value" id="statProfit">— lei</div>
+          <div class="card-sub" id="statProfitSub">venituri − cheltuieli</div>
+        </div>
+        <div class="card" style="border-top:3px solid var(--accent);cursor:pointer" onclick="showPage('hours', document.getElementById('nav-hours'))" title="Vezi detalii în Ore lucrate">
+          <div class="card-label">Venit pe oră</div>
+          <div class="card-value" id="statHourRate">— lei</div>
+          <div class="card-sub" id="statHourSub">adaugă ore lucrate</div>
+        </div>
+      </div>
+
+      <div id="backupNudge"></div>
+      <div id="tlUpcoming"></div>
+
+      <div class="tabs" id="tlFilters" style="flex-wrap:wrap;margin-bottom:8px">
+        <button class="tab active" data-f="all" onclick="setTimelineFilter('all')">Toate</button>
+        <button class="tab" data-f="fuel" onclick="setTimelineFilter('fuel')">⛽ Alimentări</button>
+        <button class="tab" data-f="expense" onclick="setTimelineFilter('expense')">💳 Cheltuieli</button>
+        <button class="tab" data-f="income" onclick="setTimelineFilter('income')">💵 Venituri</button>
+        <button class="tab" data-f="shift" onclick="setTimelineFilter('shift')">⏱️ Ore</button>
+        <button class="tab" data-f="document" onclick="setTimelineFilter('document')">📄 Documente</button>
+      </div>
+
+      <div class="timeline" id="timeline"></div>
+      <div id="timelineMore" style="margin:6px 0 0 26px"></div>
+
+      <details class="charts-fold">
+        <summary>📊 Grafice: consum lunar și distribuția cheltuielilor</summary>
+        <div class="row">
+          <div class="chart-card">
+            <div class="chart-title">Consum lunar (L/100km) <span style="font-size:12px;color:var(--muted)">ultimele 6 luni</span></div>
+            <div id="consumChart" class="bar-chart"></div>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Distribuție cheltuieli</div>
+            <div class="donut-wrap">
+              <svg id="donutSvg" width="130" height="130" viewBox="0 0 130 130"></svg>
+              <div class="donut-legend" id="donutLegend"></div>
+            </div>
+          </div>
+        </div>
+      </details>
+    </div>
+
+    <!-- FUEL -->
+    <div class="page" id="page-fuel">
+      <div class="page-header">
+        <div class="page-title">Alimentări</div>
+        <div class="page-sub">Istoric combustibil și calcul consum</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <button class="btn btn-primary" onclick="openModal('fuel')">+ Alimentare nouă</button>
+      </div>
+      <div class="expense-list">
+        <div class="expense-list-header">
+          Toate alimentările
+          <span id="fuelCount" style="color:var(--muted);font-size:13px"></span>
+        </div>
+        <div id="fuelList"></div>
+      </div>
+    </div>
+
+    <!-- EXPENSES -->
+    <div class="page" id="page-expenses">
+      <div class="page-header">
+        <div class="page-title">Cheltuieli</div>
+        <div class="page-sub">Service, asigurare, ITP și altele</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center">
+        <button class="btn btn-primary" onclick="openModal('expense')">+ Cheltuială nouă</button>
+        <div class="tabs" id="expenseTabs">
+          <button class="tab active" onclick="filterExpenses('all', this)">Toate</button>
+          <button class="tab" onclick="filterExpenses('service', this)">Service</button>
+          <button class="tab" onclick="filterExpenses('insurance', this)">Asigurare</button>
+          <button class="tab" onclick="filterExpenses('tax', this)">Taxe</button>
+          <button class="tab" onclick="filterExpenses('other', this)">Altele</button>
+        </div>
+      </div>
+      <div class="expense-list">
+        <div id="expenseList"></div>
+      </div>
+    </div>
+
+    <!-- INCOME -->
+    <div class="page" id="page-income">
+      <div class="page-header">
+        <div class="page-title">Venituri</div>
+        <div class="page-sub">Câștiguri generate cu vehiculul</div>
+      </div>
+
+      <div class="cards-grid" style="margin-bottom:28px">
+        <div class="card card-green">
+          <div class="card-label">Total venituri</div>
+          <div class="card-value" id="incomeTotal">0 lei</div>
+          <div class="card-sub">toate înregistrările</div>
+        </div>
+        <div class="card card-danger">
+          <div class="card-label">Total cheltuieli</div>
+          <div class="card-value" id="incomeCosts">0 lei</div>
+          <div class="card-sub">combustibil + altele</div>
+        </div>
+        <div class="card" id="profitCard">
+          <div class="card-label">Profit net</div>
+          <div class="card-value" id="incomeProfit">0 lei</div>
+          <div class="card-sub" id="incomeProfitSub">venituri − cheltuieli</div>
+        </div>
+        <div class="card">
+          <div class="card-label">Venit per km</div>
+          <div class="card-value" id="incomePerKm">— lei</div>
+          <div class="card-sub">față de cost/km</div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="chart-card">
+          <div class="chart-title">Venituri vs Cheltuieli lunare</div>
+          <div id="incomeVsCostChart" style="display:flex;align-items:flex-end;gap:6px;height:140px;padding-bottom:4px"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Venituri pe categorii</div>
+          <div id="incomeCatReport"></div>
+        </div>
+      </div>
+
+      <div class="expense-list">
+        <div class="expense-list-header">
+          Toate veniturile
+          <button class="btn btn-primary btn-sm" onclick="openModal('income')">+ Venit nou</button>
+        </div>
+        <div id="incomeList"></div>
+      </div>
+    </div>
+
+    <!-- HOURS -->
+    <div class="page" id="page-hours">
+      <div class="page-header">
+        <div class="page-title">Ore lucrate</div>
+        <div class="page-sub">Performanță pe oră: venit împărțit la orele lucrate</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary" onclick="openModal('shift')">+ Ore lucrate</button>
+        <select class="form-input" style="width:auto" id="hoursPeriodSel" onchange="hoursPeriod=this.value;renderHoursPage()">
+          <option value="all">Toată perioada</option>
+          <option value="30">Ultimele 30 zile</option>
+          <option value="90">Ultimele 90 zile</option>
+          <option value="365">Ultimele 12 luni</option>
+        </select>
+      </div>
+      <div class="cards-grid" id="hoursCards" style="margin-bottom:20px"></div>
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="chart-title">Concluzii</div>
+        <div id="hoursInsights" style="font-size:13.5px;line-height:1.7"></div>
+      </div>
+      <div class="row">
+        <div class="chart-card">
+          <div class="chart-title">Lei/oră pe zi a săptămânii <span style="font-size:12px;color:var(--muted)">venit total ÷ ore totale</span></div>
+          <div id="hoursWeekdayChart" class="bar-chart" style="height:150px"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Lei/oră pe lună</div>
+          <div id="hoursMonthChart" class="bar-chart" style="height:150px"></div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="expense-list">
+          <div class="expense-list-header">🏆 Cele mai bune zile <span style="color:var(--muted);font-size:12px">min. 2 ore</span></div>
+          <div id="hoursBestDays"></div>
+        </div>
+        <div class="expense-list">
+          <div class="expense-list-header">📉 Cele mai slabe zile <span style="color:var(--muted);font-size:12px">min. 2 ore</span></div>
+          <div id="hoursWorstDays"></div>
+        </div>
+      </div>
+      <div class="expense-list" style="margin-bottom:20px">
+        <div class="expense-list-header">✏️ Completează rapid orele pentru zile cu venit <span id="hoursQuickCount" style="color:var(--muted);font-size:12px"></span></div>
+        <div id="hoursQuickFill"></div>
+      </div>
+      <div class="expense-list">
+        <div class="expense-list-header">Istoric ore <span id="hoursListCount" style="color:var(--muted);font-size:13px"></span></div>
+        <div id="hoursList"></div>
+      </div>
+    </div>
+
+    <!-- DOCUMENTS -->
+    <div class="page" id="page-documents">
+      <div class="page-header">
+        <div class="page-title">Documente</div>
+        <div class="page-sub">RCA, revizie tehnică (ITP), taxa de drum — termene și costuri</div>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <button class="btn btn-primary" onclick="openModal('document')">+ Document nou</button>
+      </div>
+      <div class="cards-grid" id="docStatusCards" style="margin-bottom:28px"></div>
+      <div class="expense-list">
+        <div class="expense-list-header">
+          Istoric documente
+          <span id="docCount" style="color:var(--muted);font-size:13px"></span>
+        </div>
+        <div id="docList"></div>
+      </div>
+    </div>
+
+    <!-- REPORTS -->
+    <div class="page" id="page-reports">
+      <div class="page-header">
+        <div class="page-title">Rapoarte</div>
+        <div class="page-sub">Analiză pe perioadă</div>
+      </div>
+
+      <div class="chart-card" style="margin-bottom:14px" id="rpControls"></div>
+      <div class="tabs rp-tabs" id="rpTabs">
+        <button class="tab" data-t="general" onclick="setReportTab('general')">General</button>
+        <button class="tab" data-t="fuel" onclick="setReportTab('fuel')">⛽ Alimentări</button>
+        <button class="tab" data-t="expense" onclick="setReportTab('expense')">💳 Cheltuieli</button>
+        <button class="tab" data-t="service" onclick="setReportTab('service')">🔧 Service</button>
+        <button class="tab" data-t="income" onclick="setReportTab('income')">💵 Venituri</button>
+        <button class="tab" data-t="evo" onclick="setReportTab('evo')">📈 Evoluție</button>
+      </div>
+      <div id="rpBody"></div>
+      <div id="rpPaneEvo" style="display:none">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Break-even și graficele lunare se calculează pe tot istoricul, nu doar pe perioada aleasă.</div>
+      <div class="chart-card" style="margin-bottom:24px">
+        <div class="chart-title" style="margin-bottom:4px">
+          Break-even — Recuperarea investiției
+          <span style="font-size:12px;color:var(--muted)" id="breakEvenBadge"></span>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:16px">Linia roșie = cost mașină + cheltuieli cumulate &nbsp;·&nbsp; Linia verde = venituri cumulate</div>
+        <div id="breakEvenChart" style="position:relative;width:100%;height:220px"></div>
+        <div id="breakEvenInfo" style="margin-top:14px;font-size:13px;display:flex;gap:24px;flex-wrap:wrap"></div>
+      </div>
+
+      <div class="row">
+        <div class="chart-card">
+          <div class="chart-title">Cheltuieli lunare (lei)</div>
+          <div id="monthlyChart" class="bar-chart"></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Rezumat pe categorii</div>
+          <div id="categoryReport"></div>
+        </div>
+      </div>
+      <div class="chart-card" style="margin-bottom:20px">
+        <div class="chart-title">Evoluție cost per km <span style="font-size:12px;color:var(--muted);font-weight:400">lei/km, pe lună (combustibil + cheltuieli)</span></div>
+        <div id="costKmChart" class="bar-chart"></div>
+      </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <div class="page-title">Setări</div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Vehicul curent</div>
+        <div id="vehicleDetails"></div>
+        <button class="btn btn-secondary btn-sm" style="margin-top:12px" onclick="openModal('vehicle')">Adaugă vehicul nou</button>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Cost achiziție vehicul</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px">Folosit pentru calculul break-even — când vei recupera investiția din venituri.</div>
+        <div class="settings-row">
+          <div>
+            <div>Preț achiziție (lei)</div>
+            <span>Suma plătită pentru mașină</span>
+          </div>
+          <input type="number" class="form-input" style="width:140px" id="carPurchasePrice" placeholder="ex: 180000" onchange="saveSetting('carPurchasePrice', this.value)">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div>Data achiziției</div>
+            <span>Luna de start a calculului</span>
+          </div>
+          <input type="date" class="form-input" style="width:160px" id="carPurchaseDate" onchange="saveSettingStr('carPurchaseDate', this.value)">
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Alerte revizie</div>
+        <div class="settings-row">
+          <div>
+            <div>Interval revizie ulei</div>
+            <span>La câți km să primești alertă</span>
+          </div>
+          <input type="number" class="form-input" style="width:120px" id="oilInterval" placeholder="ex: 10000" onchange="saveSetting('oilInterval', this.value)">
+        </div>
+        <div class="settings-row">
+          <div>
+            <div>Km la ultima revizie</div>
+            <span>Odometrul la ultima schimbare</span>
+          </div>
+          <input type="number" class="form-input" style="width:120px" id="lastOilKm" placeholder="ex: 45000" onchange="saveSetting('lastOilKm', this.value)">
+        </div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Import din Drivvo</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:14px">Selectează fișierul CSV exportat din Drivvo. Datele vor fi importate direct, fără pași intermediari.</div>
+        <div id="drivvoDropZone" style="border:2px dashed var(--border);border-radius:var(--radius);padding:24px;text-align:center;cursor:pointer;transition:.15s" onclick="document.getElementById('drivvoFileInput').click()" ondragover="drivvoDragOver(event)" ondragleave="drivvoDragLeave(event)" ondrop="drivvoDrop(event)">
+          <input type="file" id="drivvoFileInput" accept=".csv" style="display:none" onchange="drivvoHandleFile(this.files[0])">
+          <div style="font-size:28px;margin-bottom:8px">📂</div>
+          <div style="font-size:13px;color:var(--muted)">Trage fișierul <strong style="color:var(--accent)">Drivvo_*.csv</strong> aici sau click pentru a selecta</div>
+        </div>
+        <div id="drivvoPreview" style="display:none;margin-top:14px">
+          <div id="drivvoPreviewContent" style="background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:13px;margin-bottom:12px"></div>
+          <button class="btn btn-primary" id="drivvoImportBtn" onclick="drivvoDoImport()">⚡ Importă acum</button>
+        </div>
+        <div id="drivvoStatus" style="display:none;margin-top:12px;padding:12px 14px;border-radius:8px;font-size:13px"></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-title">Date & Export</div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
+          <button class="btn btn-secondary" onclick="exportBackup()">💾 Backup complet (JSON)</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('backupFileInput').click()">♻️ Restaurează backup</button>
+          <input type="file" id="backupFileInput" accept=".json" style="display:none" onchange="importBackup(this.files[0]); this.value=''">
+          <button class="btn" style="background:rgba(224,92,110,.15);color:var(--danger);border:1px solid rgba(224,92,110,.3)" onclick="clearData()">🗑 Șterge toate datele</button>
+        </div>
+        <div style="font-size:12px;color:var(--muted);margin-top:14px" id="appVersionLine"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- BUTON UNIC DE ADĂUGARE -->
+<nav class="bottom-nav" aria-label="Navigare">
+  <button data-page="dashboard" class="active" onclick="showPage('dashboard')"><span>🕒</span>Cronologie</button>
+  <button data-page="income" onclick="showPage('income')"><span>💵</span>Venituri</button>
+  <button data-page="hours" onclick="showPage('hours')"><span>⏱️</span>Ore</button>
+  <button data-page="reports" onclick="showPage('reports')"><span>📈</span>Rapoarte</button>
+  <button id="bn-more" onclick="openModal('more')"><span>☰</span>Mai mult</button>
+</nav>
+<button class="fab" id="fab" aria-label="Adaugă înregistrare" onclick="openModal('chooser')" title="Adaugă: alimentare, cheltuială, venit, ore, document" aria-label="Adaugă">+</button>
+
+<!-- MODALS -->
+<div class="modal-overlay hidden" id="modalOverlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modalBox">
+    <div class="modal-title" id="modalTitle">Modal</div>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────────────
+let state = {
+  vehicles: [],
+  activeVehicle: null,
+  fuels: [],
+  expenses: [],
+  incomes: [],
+  documents: [],
+  shifts: [],
+  settings: { oilInterval: 10000, lastOilKm: 0 }
+};
+
+function load() {
+  const saved = localStorage.getItem('autotrack_v2');
+  if (saved) {
+    try { state = { ...state, ...JSON.parse(saved) }; } catch(e) {}
+  }
+  if (!state.vehicles.length) {
+    state.vehicles = [{ id: 'v1', name: 'Mașina mea', make: 'Volkswagen', model: 'Golf', year: 2018, fuel: 'Benzină' }];
+    state.activeVehicle = 'v1';
+    save();
+  }
+}
+let _refreshTimer = null;
+function save() {
+  localStorage.setItem('autotrack_v2', JSON.stringify(state));
+  // după orice modificare, reîmprospătează pagina vizibilă (ex. când adaugi din butonul plutitor)
+  clearTimeout(_refreshTimer);
+  _refreshTimer = setTimeout(refreshView, 0);
+}
+function refreshView() {
+  try {
+    const active = document.querySelector('.page.active');
+    if (!active) return;
+    renderPage(active.id.replace('page-', ''));
+  } catch (e) { console.error('refreshView:', e); }
+}
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+// ── NAVIGATION ─────────────────────────────────────────────────
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.querySelectorAll('[data-page]').forEach(n => n.classList.toggle('active', n.dataset.page === name));
+  const moreBtn = document.getElementById('bn-more');
+  if (moreBtn) moreBtn.classList.toggle('active', !['dashboard','income','hours','reports'].includes(name));
+  window.scrollTo(0, 0);
+  renderPage(name);
+}
+
+function renderPage(name) {
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'fuel') renderFuelList();
+  if (name === 'expenses') renderExpenseList('all');
+  if (name === 'income') renderIncomePage();
+  if (name === 'documents') renderDocumentsPage();
+  if (name === 'hours') renderHoursPage();
+  if (name === 'reports') renderReports();
+  if (name === 'settings') renderSettings();
+}
+
+// ── VEHICLE ────────────────────────────────────────────────────
+function switchVehicle(id) {
+  state.activeVehicle = id;
+  save(); renderDashboard();
+}
+
+function currentVehicle() {
+  return state.vehicles.find(v => v.id === state.activeVehicle) || state.vehicles[0];
+}
+
+function populateVehicleSelect() {
+  const sel = document.getElementById('vehicleSelect');
+  sel.innerHTML = state.vehicles.map(v =>
+    `<option value="${v.id}" ${v.id === state.activeVehicle ? 'selected' : ''}>${v.name}</option>`
+  ).join('');
+}
+
+// ── FUEL DATA HELPERS ──────────────────────────────────────────
+function vehicleFuels() {
+  return state.fuels.filter(f => f.vehicleId === state.activeVehicle).sort((a,b) => b.date.localeCompare(a.date));
+}
+function vehicleExpenses() {
+  return state.expenses.filter(e => e.vehicleId === state.activeVehicle).sort((a,b) => b.date.localeCompare(a.date));
+}
+function vehicleIncomes() {
+  return (state.incomes || []).filter(i => i.vehicleId === state.activeVehicle).sort((a,b) => b.date.localeCompare(a.date));
+}
+function totalIncome() {
+  return vehicleIncomes().reduce((s, i) => s + i.amount, 0);
+}
+function totalKm() {
+  const fuels = vehicleFuels();
+  if (!fuels.length) return 0;
+  return Math.max(...fuels.map(f => f.odometer)) - Math.min(...fuels.map(f => f.odometer));
+}
+function avgConsumption() {
+  const fuels = vehicleFuels().slice().sort((a,b) => a.date.localeCompare(b.date));
+  if (fuels.length < 2) return null;
+  let totalL = 0, totalKms = 0;
+  for (let i = 1; i < fuels.length; i++) {
+    const km = fuels[i].odometer - fuels[i-1].odometer;
+    if (km > 0) { totalL += fuels[i].liters; totalKms += km; }
+  }
+  return totalKms > 0 ? (totalL / totalKms * 100) : null;
+}
+function totalCost() {
+  const fuelCost = vehicleFuels().reduce((s, f) => s + f.totalPrice, 0);
+  const expCost = vehicleExpenses().reduce((s, e) => s + e.amount, 0);
+  return fuelCost + expCost;
+}
+
+// ── DASHBOARD ──────────────────────────────────────────────────
+function renderDashboard() {
+  populateVehicleSelect();
+  const veh = currentVehicle();
+  if (!veh) return;
+
+  const vehModel = veh.model && !String(veh.make || '').toLowerCase().includes(String(veh.model).toLowerCase()) ? ' ' + veh.model : '';
+  document.getElementById('dashSub').textContent = `${veh.make || ''}${vehModel} ${veh.year || ''} · ${veh.fuel || ''}`.replace(/\s+/g, ' ').trim();
+
+  const tc = totalCost();
+  const km = totalKm();
+  const cons = avgConsumption();
+  const costKm = km > 0 ? tc / km : null;
+
+  document.getElementById('statTotal').textContent = fmt0(tc) + ' lei';
+  document.getElementById('statConsumption').textContent = cons ? cons.toFixed(1) + ' L' : '— L';
+  document.getElementById('statCostKm').textContent = costKm ? costKm.toFixed(2) + ' lei' : '— lei';
+  document.getElementById('statKm').textContent = km.toLocaleString('ro') + ' km';
+
+  // Profit net
+  const inc = totalIncome();
+  const profitEl = document.getElementById('statProfit');
+  const profitCard = document.getElementById('dashProfitCard');
+  const profitSub = document.getElementById('statProfitSub');
+  if (inc > 0) {
+    const profit = inc - tc;
+    profitEl.textContent = fmt0(profit) + ' lei';
+    profitSub.textContent = profit >= 0 ? '✅ pe profit' : '❌ pe pierdere';
+    profitCard.style.borderTop = '3px solid ' + (profit >= 0 ? 'var(--accent2)' : 'var(--danger)');
+    profitEl.style.color = profit >= 0 ? 'var(--accent2)' : 'var(--danger)';
+  } else {
+    profitEl.textContent = '— lei';
+    profitSub.textContent = 'adaugă venituri';
+    profitCard.style.borderTop = '3px solid var(--border)';
+    profitEl.style.color = '';
+  }
+
+  const fuels = vehicleFuels();
+  if (fuels.length) {
+    document.getElementById('statLastFuel').textContent = `ultima: ${fuels[0].date}`;
+  }
+
+  // Venit pe oră (toate orele înregistrate)
+  const hs = computeHoursStats('all');
+  document.getElementById('statHourRate').textContent = hs.rate !== null ? r1(hs.rate) + ' lei' : '— lei';
+  document.getElementById('statHourSub').textContent = hs.days.length ? r1(hs.totalHours) + ' h în ' + hs.days.length + ' zile' : 'adaugă ore lucrate';
+
+  // Revision alert
+  const s = state.settings;
+  const lastOil = Number(s.lastOilKm) || 0;
+  const interval = Number(s.oilInterval) || 10000;
+  const currentOdo = fuels.length ? Math.max(...fuels.map(f => f.odometer)) : 0;
+  const kmSinceOil = currentOdo - lastOil;
+  const alert = document.getElementById('revisionAlert');
+  if (lastOil > 0 && kmSinceOil >= interval * 0.9) {
+    alert.classList.remove('hidden');
+    const remaining = interval - kmSinceOil;
+    document.getElementById('revisionAlertText').innerHTML = remaining <= 0
+      ? `<strong>Revizie depășită!</strong> Ai depășit intervalul de schimb ulei cu ${Math.abs(remaining).toLocaleString()} km.`
+      : `<strong>Revizie apropiată:</strong> Schimb ulei în ${remaining.toLocaleString()} km (la ${(lastOil + interval).toLocaleString()} km).`;
+  } else { alert.classList.add('hidden'); }
+
+  renderDocAlert();
+  renderConsumChart();
+  renderDonut();
+  renderBackupNudge();
+  renderTimeline();
+}
+
+function renderConsumChart() {
+  const fuels = vehicleFuels().slice().sort((a,b) => a.date.localeCompare(b.date));
+  const months = {};
+  for (let i = 1; i < fuels.length; i++) {
+    const km = fuels[i].odometer - fuels[i-1].odometer;
+    if (km <= 0) continue;
+    const cons = fuels[i].liters / km * 100;
+    const m = fuels[i].date.slice(0, 7);
+    if (!months[m]) months[m] = { total: 0, n: 0 };
+    months[m].total += cons; months[m].n++;
+  }
+  const keys = Object.keys(months).slice(-6);
+  const vals = keys.map(k => months[k].total / months[k].n);
+  renderBarChart('consumChart', keys.map(k => k.slice(5)), vals, 'var(--fuel)', v => v.toFixed(1) + ' L');
+}
+
+function renderBarChart(id, labels, vals, color, fmt_fn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const max = Math.max(...vals, 1);
+  if (!vals.length) { el.innerHTML = '<div style="color:var(--muted);font-size:13px;margin:auto">Insuficiente date</div>'; return; }
+  el.innerHTML = vals.map((v, i) => `
+    <div class="bar-col">
+      <div class="bar-val">${fmt_fn ? fmt_fn(v) : v}</div>
+      <div class="bar" style="height:${Math.max(v/max*90, 4)}%;background:${color}"></div>
+      <div class="bar-label">${labels[i]}</div>
+    </div>`).join('');
+}
+
+function renderDonut() {
+  const fuels = vehicleFuels();
+  const exps = vehicleExpenses();
+  const cats = {
+    'Combustibil': fuels.reduce((s, f) => s + f.totalPrice, 0),
+    'Service': exps.filter(e => e.category === 'service').reduce((s, e) => s + e.amount, 0),
+    'Asigurare': exps.filter(e => e.category === 'insurance').reduce((s, e) => s + e.amount, 0),
+    'Altele': exps.filter(e => !['service','insurance'].includes(e.category)).reduce((s, e) => s + e.amount, 0),
+  };
+  const colors = ['var(--fuel)', 'var(--service)', 'var(--insurance)', 'var(--other)'];
+  const total = Object.values(cats).reduce((s, v) => s + v, 0);
+  const svg = document.getElementById('donutSvg');
+  const legend = document.getElementById('donutLegend');
+  if (total === 0) { svg.innerHTML = '<circle cx="65" cy="65" r="45" fill="none" stroke="var(--border)" stroke-width="20"/>'; legend.innerHTML = '<div style="color:var(--muted);font-size:12px">Nicio cheltuială</div>'; return; }
+
+  let offset = 0;
+  const r = 45, cx = 65, cy = 65;
+  const circ = 2 * Math.PI * r;
+  let paths = '';
+  Object.entries(cats).forEach(([name, val], i) => {
+    const frac = val / total;
+    const dash = frac * circ;
+    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${colors[i]}" stroke-width="20" stroke-dasharray="${dash} ${circ - dash}" stroke-dashoffset="${-offset * circ}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    offset += frac;
+  });
+  svg.innerHTML = paths + `<text x="65" y="61" text-anchor="middle" font-size="11" fill="var(--muted)">Total</text><text x="65" y="76" text-anchor="middle" font-size="13" font-weight="600" fill="var(--text)">${fmt(total)}</text>`;
+  legend.innerHTML = Object.entries(cats).map(([name, val], i) =>
+    `<div class="legend-item"><div class="legend-dot" style="background:${colors[i]}"></div><div>${name}<br><span style="color:var(--muted)">${fmt(val)} lei</span></div></div>`
+  ).join('');
+}
+
+// ── TIMELINE (pagina principală) ───────────────────────────────
+let tlFilter = 'all';
+let tlLimit = 40;
+const MONTH_FULL = ['ianuarie', 'februarie', 'martie', 'aprilie', 'mai', 'iunie', 'iulie', 'august', 'septembrie', 'octombrie', 'noiembrie', 'decembrie'];
+const TL_KIND_ORDER = { income: 0, shift: 1, fuel: 2, expense: 3, document: 4 };
+
+function setTimelineFilter(f) {
+  tlFilter = f; tlLimit = 40;
+  renderTimeline();
+}
+function tlMore() { tlLimit += 40; renderTimeline(); }
+
+function tlDayLabel(dateStr) {
+  const t = today();
+  if (dateStr === t) return 'Azi';
+  if (dateStr === dateMinusDays(1)) return 'Ieri';
+  const dt = new Date(dateStr + 'T00:00:00');
+  const yr = dt.getFullYear() !== new Date().getFullYear() ? ' ' + dt.getFullYear() : '';
+  return WD_NAMES[weekdayIdx(dateStr)] + ', ' + dt.getDate() + ' ' + MONTH_FULL[dt.getMonth()] + yr;
+}
+
+function fuelConsMap() {
+  const sorted = vehicleFuels().slice().sort((a, b) => a.date.localeCompare(b.date) || a.odometer - b.odometer);
+  const map = {};
+  for (let i = 1; i < sorted.length; i++) {
+    const km = sorted[i].odometer - sorted[i - 1].odometer;
+    if (km > 0) map[sorted[i].id] = sorted[i].liters / km * 100;
+  }
+  return map;
+}
+
+function buildTimelineEvents() {
+  const ev = [];
+  const cons = fuelConsMap();
+  vehicleFuels().forEach(f => ev.push({
+    kind: 'fuel', id: f.id, date: f.date, icon: '⛽', color: 'var(--fuel)', amount: -f.totalPrice,
+    title: 'Alimentare · ' + r1(f.liters) + ' L' + (f.pricePerLiter ? ' · ' + fmt(f.pricePerLiter) + ' lei/L' : ''),
+    meta: [f.odometer ? f.odometer.toLocaleString('ro') + ' km' : '', cons[f.id] ? r1(cons[f.id]) + ' L/100km' : '', f.station ? escHtml(f.station) : ''].filter(Boolean).join(' · '),
+    del: `deleteFuel('${f.id}')`
+  }));
+  vehicleExpenses().filter(e => !e.docId).forEach(e => ev.push({
+    kind: 'expense', id: e.id, date: e.date, icon: catIcon(e.category), color: catColor(e.category), amount: -e.amount,
+    title: e.description, meta: [catLabel(e.category), e.odometer ? e.odometer.toLocaleString('ro') + ' km' : ''].filter(Boolean).join(' · '),
+    del: `deleteExpense('${e.id}')`
+  }));
+  vehicleIncomes().forEach(i => ev.push({
+    kind: 'income', id: i.id, date: i.date, icon: incomeCatIcon(i.category), color: 'var(--accent2)', amount: i.amount,
+    title: i.description, meta: incomeCatLabel(i.category), del: `deleteIncome('${i.id}')`
+  }));
+  const incByDate = {}; vehicleIncomes().forEach(i => { incByDate[i.date] = (incByDate[i.date] || 0) + i.amount; });
+  const hrsByDate = {}; vehicleShifts().forEach(s => { hrsByDate[s.date] = (hrsByDate[s.date] || 0) + s.hours; });
+  vehicleShifts().forEach(s => ev.push({
+    kind: 'shift', id: s.id, date: s.date, icon: '⏱️', color: 'var(--accent)', amount: null, hours: s.hours,
+    title: 'Ore lucrate · ' + r1(s.hours) + ' h' + (s.start && s.end ? ' (' + s.start + '–' + s.end + ')' : ''),
+    meta: incByDate[s.date] ? 'ziua: ' + r1(incByDate[s.date] / hrsByDate[s.date]) + ' lei/oră' : '',
+    del: `deleteShift('${s.id}')`
+  }));
+  vehicleDocuments().forEach(d => {
+    const info = DOC_TYPES[d.type] || DOC_TYPES.other;
+    const linked = state.expenses.find(e => e.docId === d.id);
+    ev.push({
+      kind: 'document', id: d.id, date: d.start, icon: info.icon, color: 'var(--other)', amount: linked ? -linked.amount : null,
+      title: info.label + ' · valabil până la ' + fmtDate(d.expiry),
+      meta: [d.notes ? escHtml(d.notes) : '', linked ? '' : (d.cost ? 'cost înregistrat separat' : '')].filter(Boolean).join(' · '),
+      del: `deleteDocument('${d.id}')`
+    });
+  });
+  return ev;
+}
+
+function renderUpcoming() {
+  const el = document.getElementById('tlUpcoming');
+  if (!el) return;
+  const rows = [];
+  ['rca', 'itp', 'roadtax', 'casco'].forEach(t => {
+    const d = latestDocOfType(t); if (!d) return;
+    const st = docStatus(d);
+    if (st.days <= 90) rows.push({ d, st, info: DOC_TYPES[t] });
+  });
+  if (!rows.length || !(tlFilter === 'all' || tlFilter === 'document')) { el.innerHTML = ''; return; }
+  rows.sort((a, b) => a.st.days - b.st.days);
+  el.innerHTML = `<div class="tl-upcoming"><span class="tl-upcoming-title">⏳ Termene</span>` + rows.map(r => `
+    <button class="tl-chip" style="--chipc:${r.st.color}" title="Expiră la ${fmtDate(r.d.expiry)}" onclick="showPage('documents', document.getElementById('nav-documents'))">${r.info.icon} ${r.info.short} · <strong>${r.st.text}</strong></button>`).join('') + `</div>`;
+}
+
+function renderTimeline() {
+  const box = document.getElementById('timeline');
+  if (!box) return;
+  document.querySelectorAll('#tlFilters .tab').forEach(b => b.classList.toggle('active', b.dataset.f === tlFilter));
+  renderUpcoming();
+
+  let ev = buildTimelineEvents();
+  if (tlFilter !== 'all') ev = ev.filter(e => e.kind === tlFilter);
+  ev.sort((a, b) => b.date.localeCompare(a.date) || TL_KIND_ORDER[a.kind] - TL_KIND_ORDER[b.kind]);
+
+  if (!ev.length) {
+    box.innerHTML = '<div class="empty-state" style="margin-left:-26px">' + (tlFilter === 'all'
+      ? 'Nicio înregistrare încă. Apasă <strong>+ Adaugă</strong> pentru prima alimentare, cheltuială, venit sau tură.<br><br>Ai deja date? <a href="#" style="color:var(--accent)" onclick="event.preventDefault();document.getElementById(\'backupFileInput\').click()">♻️ Restaurează un backup</a>'
+      : 'Nicio înregistrare de acest tip.') + '</div>';
+    document.getElementById('timelineMore').innerHTML = '';
+    return;
+  }
+
+  const shown = ev.slice(0, tlLimit);
+  const byDay = [];
+  shown.forEach(e => { const last = byDay[byDay.length - 1]; if (last && last.date === e.date) last.items.push(e); else byDay.push({ date: e.date, items: [e] }); });
+
+  box.innerHTML = byDay.map(g => {
+    const inc = g.items.filter(e => e.amount > 0).reduce((s, e) => s + e.amount, 0);
+    const cost = g.items.filter(e => e.amount < 0).reduce((s, e) => s - e.amount, 0);
+    const hrs = g.items.filter(e => e.kind === 'shift').reduce((s, e) => s + e.hours, 0);
+    const sum = [
+      inc ? `<span style="color:var(--accent2)">+${fmt(inc)} lei</span>` : '',
+      cost ? `<span>−${fmt(cost)} lei</span>` : '',
+      hrs ? `<span style="color:var(--accent)">${r1(hrs)} h</span>` : '',
+      (inc && hrs) ? `<span>${r1(inc / hrs)} lei/oră</span>` : ''
+    ].filter(Boolean).join('');
+    return `<div class="tl-day${g.date === today() ? ' today' : ''}"><div class="tl-day-title">${tlDayLabel(g.date)}</div><div class="tl-day-sum">${sum}</div></div>` +
+      g.items.map(e => `
+      <div class="tl-item" style="--dot:${e.color};cursor:pointer" onclick="editRecord('${e.kind}','${e.id}')">
+        <div class="tl-ico">${e.icon}</div>
+        <div class="tl-main"><div class="tl-title">${e.kind === 'income' || e.kind === 'expense' ? escHtml(e.title) : e.title}</div>${e.meta ? `<div class="tl-meta">${e.meta}</div>` : ''}</div>
+        ${e.amount !== null ? `<div class="tl-amount" style="${e.amount > 0 ? 'color:var(--accent2)' : ''}">${e.amount > 0 ? '+' : '−'}${fmt(Math.abs(e.amount))} lei</div>` : ''}
+        <button class="tl-del" title="Șterge" aria-label="Șterge" onclick="event.stopPropagation();${e.del}">✕</button>
+      </div>`).join('');
+  }).join('');
+
+  document.getElementById('timelineMore').innerHTML = ev.length > shown.length
+    ? `<button class="btn btn-secondary btn-sm" onclick="tlMore()">Arată mai multe (${ev.length - shown.length} rămase)</button>`
+    : (ev.length > 15 ? `<span style="font-size:12px;color:var(--muted)">${ev.length} înregistrări afișate</span>` : '');
+  if (tlFilter !== 'all') {
+    const names = { fuel: 'Alimentări', expense: 'Cheltuieli', income: 'Venituri', shift: 'Ore', document: 'Documente' };
+    document.getElementById('timelineMore').innerHTML += `<div style="margin-top:10px;font-size:13px;color:var(--warn)">⚠️ Filtru activ: ${names[tlFilter] || tlFilter}. <a href="#" style="color:var(--accent)" onclick="event.preventDefault();setTimelineFilter('all')">Arată tot</a></div>`;
+  }
+}
+
+// ── FUEL PAGE ──────────────────────────────────────────────────
+function renderFuelList() {
+  const fuels = vehicleFuels();
+  document.getElementById('fuelCount').textContent = fuels.length + ' înregistrări';
+  const el = document.getElementById('fuelList');
+  if (!fuels.length) { el.innerHTML = '<div class="empty-state">Nicio alimentare înregistrată.</div>'; return; }
+
+  // Calculate consumption for each
+  const sorted = [...fuels].sort((a,b) => a.date.localeCompare(b.date));
+  const consMap = {};
+  for (let i = 1; i < sorted.length; i++) {
+    const km = sorted[i].odometer - sorted[i-1].odometer;
+    if (km > 0) consMap[sorted[i].id] = (sorted[i].liters / km * 100).toFixed(1);
+  }
+
+  el.innerHTML = fuels.map(f => `
+    <div class="expense-item">
+      <div class="expense-dot" style="background:var(--fuel)"></div>
+      <div class="expense-info">
+        <div class="expense-name">⛽ ${f.liters} L · ${f.pricePerLiter} lei/L${f.station ? ' · ' + f.station : ''}</div>
+        <div class="expense-meta">${f.date} · ${f.odometer.toLocaleString()} km${consMap[f.id] ? ' · <strong style="color:var(--accent)">' + consMap[f.id] + ' L/100km</strong>' : ''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="expense-amount">${fmt(f.totalPrice)} lei</div>
+        <button class="expense-delete" title="Editează" aria-label="Editează" onclick="editRecord('fuel','${f.id}')">✏️</button>
+        <button class="expense-delete" title="Șterge" aria-label="Șterge" onclick="deleteFuel('${f.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── EXPENSE PAGE ───────────────────────────────────────────────
+let expenseFilter = 'all';
+function filterExpenses(cat, el) {
+  expenseFilter = cat;
+  document.querySelectorAll('#expenseTabs .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderExpenseList(cat);
+}
+function renderExpenseList(cat) {
+  let exps = vehicleExpenses();
+  if (cat !== 'all') exps = exps.filter(e => e.category === cat);
+  const el = document.getElementById('expenseList');
+  if (!exps.length) { el.innerHTML = '<div class="empty-state">Nicio cheltuială în această categorie.</div>'; return; }
+  el.innerHTML = exps.map(e => `
+    <div class="expense-item">
+      <div class="expense-dot" style="background:${catColor(e.category)}"></div>
+      <div class="expense-info">
+        <div class="expense-name">${catIcon(e.category)} ${e.description}</div>
+        <div class="expense-meta">${e.date} · ${catLabel(e.category)}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="expense-amount">${fmt(e.amount)} lei</div>
+        <button class="expense-delete" title="Editează" aria-label="Editează" onclick="editRecord('expense','${e.id}')">✏️</button>
+        <button class="expense-delete" title="Șterge" aria-label="Șterge" onclick="deleteExpense('${e.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+// ── REPORTS ────────────────────────────────────────────────────
+
+// ── RAPOARTE PE PERIOADĂ ───────────────────────────────────────
+let rpState = { preset: '30d', from: '', to: '', tab: 'general' };
+const RP_PRESETS = [['7d', '7 zile'], ['30d', '30 zile'], ['week', 'Săpt. aceasta'], ['month', 'Luna aceasta'], ['lastmonth', 'Luna trecută'], ['quarter', 'Trimestru'], ['year', 'Anul acesta'], ['all', 'Tot'], ['custom', 'Personalizat']];
+function rpFmt(d) { return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function rpDate(str) { return new Date(str + 'T00:00:00'); }
+function rpAdd(str, n) { const d = rpDate(str); d.setDate(d.getDate() + n); return rpFmt(d); }
+function rpDays(from, to) { return Math.max(1, Math.round((rpDate(to) - rpDate(from)) / 86400000) + 1); }
+function rpRange() {
+  const t = today(), d = rpDate(t), y = d.getFullYear(), m = d.getMonth();
+  switch (rpState.preset) {
+    case '7d': return { from: rpAdd(t, -6), to: t };
+    case '30d': return { from: rpAdd(t, -29), to: t };
+    case 'week': { const wd = (d.getDay() + 6) % 7; return { from: rpAdd(t, -wd), to: rpAdd(t, 6 - wd) }; }
+    case 'month': return { from: rpFmt(new Date(y, m, 1)), to: rpFmt(new Date(y, m + 1, 0)) };
+    case 'lastmonth': return { from: rpFmt(new Date(y, m - 1, 1)), to: rpFmt(new Date(y, m, 0)) };
+    case 'quarter': { const q = Math.floor(m / 3) * 3; return { from: rpFmt(new Date(y, q, 1)), to: rpFmt(new Date(y, q + 3, 0)) }; }
+    case 'year': return { from: y + '-01-01', to: y + '-12-31' };
+    case 'custom': return { from: rpState.from || t, to: rpState.to || t };
+    default: {
+      const ds = [...vehicleFuels(), ...vehicleExpenses(), ...vehicleIncomes(), ...vehicleShifts()].map(x => x.date).sort();
+      return ds.length ? { from: ds[0], to: ds[ds.length - 1] } : { from: t, to: t };
+    }
+  }
+}
+// date + calcule pentru o perioadă
+function rpCompute(from, to) {
+  const inR = x => x.date >= from && x.date <= to;
+  const fuels = vehicleFuels().filter(inR), allExp = vehicleExpenses().filter(inR), incs = vehicleIncomes().filter(inR), shifts = vehicleShifts().filter(inR);
+  const svc = allExp.filter(e => e.category === 'service'), oth = allExp.filter(e => e.category !== 'service');
+  const sum = (arr, k) => arr.reduce((a, x) => a + x[k], 0);
+  const fuelCost = sum(fuels, 'totalPrice'), liters = sum(fuels, 'liters'), expCost = sum(allExp, 'amount'), income = sum(incs, 'amount');
+  // consum / km: diferența de odometru între alimentări consecutive (alimentarea mai nouă e în perioadă)
+  const sorted = vehicleFuels().slice().sort((a, b) => a.date.localeCompare(b.date) || a.odometer - b.odometer);
+  const fills = [];
+  for (let i = 1; i < sorted.length; i++) {
+    const d = sorted[i].odometer - sorted[i - 1].odometer;
+    if (d > 0 && inR(sorted[i])) fills.push({ date: sorted[i].date, km: d, liters: sorted[i].liters, prevDate: sorted[i - 1].date });
+  }
+  const km = sum(fills, 'km'), litersUsed = sum(fills, 'liters');
+  const hours = sum(shifts, 'hours'), hDays = new Set(shifts.map(s => s.date));
+  const incOnHDays = incs.filter(i => hDays.has(i.date)).reduce((a, i) => a + i.amount, 0);
+  const ppls = fuels.map(f => f.pricePerLiter).filter(x => x > 0);
+  const big = fills.filter(f => f.liters >= 30).map(f => f.liters / f.km * 100);
+  const gaps = fills.map(f => rpDays(f.prevDate, f.date) - 1).filter(x => x > 0);
+  return {
+    from, to, days: rpDays(from, to), fuels, allExp, svc, oth, incs, shifts, fills,
+    income, fuelCost, expCost, cost: fuelCost + expCost, net: income - fuelCost - expCost,
+    liters, avgPpl: liters ? fuelCost / liters : 0, minPpl: ppls.length ? Math.min(...ppls) : 0, maxPpl: ppls.length ? Math.max(...ppls) : 0,
+    km, cons: km && litersUsed ? litersUsed / km * 100 : 0, minCons: big.length ? Math.min(...big) : 0, maxCons: big.length ? Math.max(...big) : 0,
+    avgKmBetween: fills.length ? km / fills.length : 0, avgGapDays: gaps.length ? gaps.reduce((a, b) => a + b, 0) / gaps.length : 0,
+    hours, perHour: hours ? incOnHDays / hours : 0, incDays: new Set(incs.map(i => i.date)).size,
+    n: fuels.length + allExp.length + incs.length + shifts.length
+  };
+}
+function rpDelta(cur, prev, goodUp) {
+  if (prev == null || (prev === 0 && !cur)) return '';
+  if (prev === 0) return '<span style="color:var(--muted)"> · nou</span>';
+  const p = (cur - prev) / Math.abs(prev) * 100;
+  if (Math.abs(p) < 0.5) return '<span style="color:var(--muted)"> · neschimbat</span>';
+  const good = goodUp ? p > 0 : p < 0;
+  return `<span style="color:${good ? 'var(--accent2)' : 'var(--danger)'}"> · ${p > 0 ? '▲' : '▼'} ${Math.abs(p).toFixed(0)}%</span>`;
+}
+function setReportPreset(p) { rpState.preset = p; renderReports(); }
+function setReportTab(t) { rpState.tab = t; renderReports(); }
+function setReportDates() {
+  rpState.preset = 'custom';
+  const f = document.getElementById('rpFrom').value, t = document.getElementById('rpTo').value;
+  if (f) rpState.from = f; if (t) rpState.to = t;
+  if (rpState.from && rpState.to && rpState.from > rpState.to) { const x = rpState.from; rpState.from = rpState.to; rpState.to = x; }
+  renderReports();
+}
+
+// grupare pe zi / săptămână / lună, în funcție de lungimea perioadei
+function rpBucketer(from, to) {
+  const days = rpDays(from, to);
+  if (days <= 35) return { key: d => d, label: k => k.slice(8) + '.' + k.slice(5, 7), unit: 'zi' };
+  if (days <= 150) return { key: d => { const x = rpDate(d); x.setDate(x.getDate() - ((x.getDay() + 6) % 7)); return rpFmt(x); }, label: k => k.slice(8) + '.' + k.slice(5, 7), unit: 'săptămână' };
+  return { key: d => d.slice(0, 7), label: k => k.slice(5) + '.' + k.slice(2, 4), unit: 'lună' };
+}
+function rpBucketKeys(from, to, B) {
+  const keys = []; let d = from;
+  while (d <= to && keys.length < 400) { const k = B.key(d); if (!keys.length || keys[keys.length - 1] !== k) keys.push(k); d = rpAdd(d, 1); }
+  return keys.slice(-24);
+}
+function rpSeries(items, valFn, B, keys) {
+  const m = {}; keys.forEach(k => (m[k] = 0));
+  items.forEach(x => { const k = B.key(x.date); if (k in m) m[k] += valFn(x); });
+  return keys.map(k => m[k]);
+}
+// grafic cu bare (1–2 serii) + legendă
+function rpBars(labels, series, fmtFn) {
+  const max = Math.max(1, ...series.flatMap(s => s.vals));
+  const every = Math.ceil(labels.length / 8);
+  return `<div class="rp-bars">${labels.map((l, i) => `
+    <div class="rp-col" title="${l}: ${series.map(s => (s.name ? s.name + ' ' : '') + (fmtFn || fmt)(s.vals[i])).join(' · ')}">
+      <div class="rp-pair">${series.map(s => `<div class="rp-bar" style="height:${Math.max(s.vals[i] > 0 ? 2 : 0, s.vals[i] / max * 100)}%;background:${s.color}"></div>`).join('')}</div>
+      <div class="rp-lab">${i % every === 0 ? l : ''}</div>
+    </div>`).join('')}</div>
+    <div style="display:flex;gap:14px;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:6px"><span>${series.filter(s => s.name).map(s => `<span style="display:inline-flex;align-items:center;gap:5px;margin-right:12px"><span style="width:9px;height:9px;border-radius:2px;background:${s.color}"></span>${s.name}</span>`).join('')}</span><span>max: ${(fmtFn || fmt)(max)}</span></div>`;
+}
+function rpBreakdown(rows, total, color) {
+  rows = rows.filter(r => r[1] > 0);
+  return rows.length ? rows.map(([n, a, c]) => `
+    <div style="margin-bottom:9px"><div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;margin-bottom:3px"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(n)}</span><span style="white-space:nowrap">${fmt(a)} lei <span style="color:var(--muted)">(${total ? (a / total * 100).toFixed(0) : 0}%)</span></span></div>
+    <div style="height:6px;background:var(--border);border-radius:3px"><div style="height:100%;width:${total ? a / total * 100 : 0}%;background:${c || color};border-radius:3px"></div></div></div>`).join('') : '<div style="color:var(--muted);font-size:13px">Nimic în perioadă</div>';
+}
+function rpGroup(items, valFn, nameFn) {
+  const m = {}; items.forEach(x => { const n = nameFn(x); m[n] = (m[n] || 0) + valFn(x); });
+  return Object.entries(m).sort((a, b) => b[1] - a[1]);
+}
+function rpCard(cls, label, val, sub) { return `<div class="card ${cls}"><div class="card-label">${label}</div><div class="card-value" style="font-size:22px">${val}</div><div class="card-sub">${sub}</div></div>`; }
+function rpBlock(title, inner) { return `<div class="chart-card" style="margin-bottom:16px"><div class="chart-title" style="font-size:14px;margin-bottom:12px">${title}</div>${inner}</div>`; }
+const rpLei = v => fmt(v) + ' lei';
+
+function renderReportControls(r, cmp) {
+  const chips = RP_PRESETS.map(([k, n]) => `<button class="tl-chip" style="${rpState.preset === k ? '--chipc:var(--accent);background:var(--surface2)' : ''}" onclick="setReportPreset('${k}')">${n}</button>`).join('');
+  document.getElementById('rpControls').innerHTML = `
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">${chips}</div>
+    <div class="form-row" style="margin-bottom:10px">
+      <div class="form-group" style="margin-bottom:0"><label class="form-label" for="rpFrom">De la</label><input type="date" class="form-input" id="rpFrom" value="${r.from}" onchange="setReportDates()"></div>
+      <div class="form-group" style="margin-bottom:0"><label class="form-label" for="rpTo">Până la</label><input type="date" class="form-input" id="rpTo" value="${r.to}" onchange="setReportDates()"></div>
+    </div>
+    <div style="font-size:12px;color:var(--muted)">${r.n} înregistrări · ${fmtDate(r.from)} – ${fmtDate(r.to)} · ${r.days} ${r.days === 1 ? 'zi' : 'zile'}${cmp ? ' · comparație cu ' + fmtDate(cmp.from) + ' – ' + fmtDate(cmp.to) : ''}</div>`;
+}
+
+function rpTabGeneral(r, cmp) {
+  const D = (cur, key, up) => cmp ? rpDelta(cur, cmp[key], up) : '';
+  const B = rpBucketer(r.from, r.to), keys = rpBucketKeys(r.from, r.to, B);
+  const costItems = [...r.fuels.map(f => ({ date: f.date, v: f.totalPrice })), ...r.allExp.map(e => ({ date: e.date, v: e.amount }))];
+  const chart = rpBars(keys.map(B.label), [
+    { name: 'Venituri', color: 'var(--accent2)', vals: rpSeries(r.incs, i => i.amount, B, keys) },
+    { name: 'Costuri', color: 'var(--danger)', vals: rpSeries(costItems, x => x.v, B, keys) }
+  ], v => fmt0(v));
+  const perKm = v => (r.km ? fmt(v / r.km) + ' lei/km' : '—');
+  const catRows = [['Combustibil', r.fuelCost, 'var(--fuel)'], ...rpGroup(r.allExp, e => e.amount, e => catLabel(e.category)).map(([n, a]) => [n, a, 'var(--other)'])];
+  return `
+    <div class="cards-grid" style="margin-bottom:16px">
+      ${rpCard(r.net >= 0 ? 'card-accent' : 'card-danger', 'Balanță', rpLei(r.net), `${fmt(r.net / r.days)} lei/zi · ${perKm(r.net)}${D(r.net, 'net', true)}`)}
+      ${rpCard('card-accent', 'Distanță', r.km ? r.km.toLocaleString('ro') + ' km' : '—', r.km ? 'medie ' + Math.round(r.km / r.days) + ' km/zi' : 'necesită alimentări cu odometru')}
+      ${rpCard('card-danger', 'Costuri', rpLei(r.cost), `${fmt(r.cost / r.days)} lei/zi · ${perKm(r.cost)}${D(r.cost, 'cost', false)}`)}
+      ${rpCard('card-green', 'Venituri', rpLei(r.income), `${fmt(r.income / r.days)} lei/zi · ${perKm(r.income)}${D(r.income, 'income', true)}`)}
+      ${rpCard('card-green', 'Lei / oră', r.hours ? fmt(r.perHour) + ' lei' : '—', r.hours ? r1(r.hours) + ' h lucrate' : 'fără ore înregistrate în perioadă')}
+      ${rpCard('card-green', 'Zile cu venit', String(r.incDays), r.incDays ? 'medie ' + fmt(r.income / r.incDays) + ' lei/zi activă' : '—')}
+    </div>
+    ${rpBlock('Venituri vs. costuri · pe ' + B.unit, chart)}
+    ${rpBlock('Unde se duc costurile', rpBreakdown(catRows, r.cost))}
+    <div style="margin-bottom:8px"><button class="btn btn-secondary btn-sm" onclick="exportPeriodCSV()">⬇️ Export CSV pentru perioadă</button></div>
+    <div style="font-size:12px;color:var(--muted)">Prețul de achiziție al mașinii nu este inclus. Km se calculează din diferența de odometru între alimentări, deci pe perioade foarte scurte sunt aproximativi.</div>`;
+}
+
+function rpTabFuel(r, cmp) {
+  const D = (cur, key, up) => cmp ? rpDelta(cur, cmp[key], up) : '';
+  const B = rpBucketer(r.from, r.to), keys = rpBucketKeys(r.from, r.to, B);
+  const costS = rpSeries(r.fuels, f => f.totalPrice, B, keys);
+  const kmS = rpSeries(r.fills, f => f.km, B, keys), lS = rpSeries(r.fills, f => f.liters, B, keys);
+  const consS = keys.map((k, i) => (kmS[i] ? lS[i] / kmS[i] * 100 : 0));
+  const pL = {}, pN = {}; r.fuels.forEach(f => { if (f.pricePerLiter > 0) { const k = B.key(f.date); pL[k] = (pL[k] || 0) + f.pricePerLiter; pN[k] = (pN[k] || 0) + 1; } });
+  const pplS = keys.map(k => (pN[k] ? pL[k] / pN[k] : 0));
+  const n = r.fuels.length;
+  return `
+    <div class="cards-grid" style="margin-bottom:16px">
+      ${rpCard('card-warn', 'Cost combustibil', rpLei(r.fuelCost), `${fmt(r.fuelCost / r.days)} lei/zi · ${r.km ? fmt(r.fuelCost / r.km) + ' lei/km' : '—'}${D(r.fuelCost, 'fuelCost', false)}`)}
+      ${rpCard('card-warn', 'Volum', r1(r.liters) + ' L', `${n ? r1(r.liters / n) + ' L/alimentare' : '—'} · ${r1(r.liters / r.days)} L/zi`)}
+      ${rpCard('card-warn', 'Preț mediu', r.avgPpl ? fmt(r.avgPpl) + ' lei/L' : '—', r.minPpl ? `min ${fmt(r.minPpl)} · max ${fmt(r.maxPpl)}` : '—')}
+      ${rpCard('card-accent', 'Consum mediu', r.cons ? r1(r.cons) + ' L/100km' : '—', r.cons ? `litri la 100 km între alimentări` : 'prea puține alimentări')}
+    </div>
+    ${rpBlock('Rutina de alimentare', `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:13px">
+      <div><div style="color:var(--muted);font-size:12px">Între alimentări</div><div style="font-size:18px;font-weight:600">${r.avgKmBetween ? Math.round(r.avgKmBetween).toLocaleString('ro') + ' km' : '—'}</div></div>
+      <div><div style="color:var(--muted);font-size:12px">Frecvență</div><div style="font-size:18px;font-weight:600">${r.avgGapDays ? r1(r.avgGapDays) + ' zile' : '—'}</div></div>
+      <div><div style="color:var(--muted);font-size:12px">Alimentări în perioadă</div><div style="font-size:18px;font-weight:600">${n}</div></div>
+      <div><div style="color:var(--muted);font-size:12px">Proiecție lunară</div><div style="font-size:18px;font-weight:600">${fmt0(r.fuelCost / r.days * 30)} lei</div></div></div>`)}
+    ${rpBlock('Cost combustibil · pe ' + B.unit, rpBars(keys.map(B.label), [{ color: 'var(--fuel)', vals: costS }], v => fmt0(v)))}
+    ${rpBlock('Consum · L/100km pe ' + B.unit, rpBars(keys.map(B.label), [{ color: 'var(--accent)', vals: consS }], v => v.toFixed(1)))}
+    ${rpBlock('Preț mediu / litru · pe ' + B.unit, rpBars(keys.map(B.label), [{ color: 'var(--warn)', vals: pplS }], v => v.toFixed(2)))}`;
+}
+
+function rpTabList(r, cmp, kind) {
+  const D = (cur, key, up) => cmp ? rpDelta(cur, cmp[key], up) : '';
+  const B = rpBucketer(r.from, r.to), keys = rpBucketKeys(r.from, r.to, B);
+  const isInc = kind === 'income';
+  const items = isInc ? r.incs : (kind === 'service' ? r.svc : r.oth);
+  const amt = isInc ? (x => x.amount) : (x => x.amount);
+  const total = items.reduce((a, x) => a + x.amount, 0);
+  const color = isInc ? 'var(--accent2)' : (kind === 'service' ? 'var(--other)' : 'var(--danger)');
+  const label = isInc ? 'Venituri' : (kind === 'service' ? 'Service' : 'Cheltuieli');
+  const prevKey = isInc ? 'income' : null;
+  const cmpTotal = cmp ? (isInc ? cmp.income : (kind === 'service' ? cmp.svc : cmp.oth).reduce((a, x) => a + x.amount, 0)) : null;
+  const byName = rpGroup(items, amt, x => (x.description || '—').split(' · ')[0]);
+  const catRows = rpGroup(items, amt, x => (isInc ? incomeCatLabel(x.category) : catLabel(x.category)));
+  const perKm = r.km ? fmt(total / r.km) + ' lei/km' : '—';
+  const top = items.slice().sort((a, b) => b.amount - a.amount).slice(0, 8);
+  const days = {}; if (isInc) items.forEach(i => (days[i.date] = (days[i.date] || 0) + i.amount));
+  const bestDays = Object.entries(days).sort((a, b) => b[1] - a[1]).slice(0, 5);
+  const extra = isInc ? rpBlock('Cele mai bune zile', bestDays.length ? bestDays.map(([d, v]) => `<div style="display:flex;justify-content:space-between;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)"><span>${fmtDate(d)}</span><strong style="color:var(--accent2)">${fmt(v)} lei</strong></div>`).join('') : '<div style="color:var(--muted);font-size:13px">Nimic în perioadă</div>')
+    : rpBlock('Cele mai mari înregistrări', top.length ? top.map(x => `<div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:6px 0;border-bottom:1px solid var(--border)"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${fmtDate(x.date)} · ${escHtml(x.description)}</span><strong style="white-space:nowrap">${fmt(x.amount)} lei</strong></div>`).join('') : '<div style="color:var(--muted);font-size:13px">Nimic în perioadă</div>');
+  return `
+    <div class="cards-grid" style="margin-bottom:16px">
+      ${rpCard(isInc ? 'card-green' : 'card-danger', label + ' total', rpLei(total), `${items.length} înregistrări${cmpTotal != null ? rpDelta(total, cmpTotal, isInc) : ''}`)}
+      ${rpCard('card-accent', 'Medie pe zi', fmt(total / r.days) + ' lei', 'pe ' + r.days + ' zile')}
+      ${rpCard('card-accent', 'Pe km', perKm, r.km ? r.km.toLocaleString('ro') + ' km în perioadă' : 'necesită km din odometru')}
+      ${isInc ? rpCard('card-green', 'Zile cu venit', String(r.incDays), r.incDays ? fmt(total / r.incDays) + ' lei/zi activă' : '—') : rpCard('card-warn', 'Cea mai mare', top.length ? fmt(top[0].amount) + ' lei' : '—', top.length ? escHtml(top[0].description).slice(0, 32) : '—')}
+    </div>
+    ${rpBlock(label + ' · pe ' + B.unit, rpBars(keys.map(B.label), [{ color, vals: rpSeries(items, amt, B, keys) }], v => fmt0(v)))}
+    ${rpBlock(isInc ? 'Pe categorii' : 'Pe categorii', rpBreakdown(catRows, total, color))}
+    ${rpBlock('Pe tip / descriere', rpBreakdown(byName.slice(0, 10), total, color))}
+    ${extra}`;
+}
+
+function renderReports() {
+  if (!document.getElementById('rpBody')) return;
+  let { from, to } = rpRange();
+  if (to > today()) to = today(); // perioadele în curs se opresc la azi, ca mediile pe zi să fie corecte
+  if (from > to) from = to;
+  const r = rpCompute(from, to);
+  const c = rpState.preset !== 'all' ? rpCompute(rpAdd(from, -r.days), rpAdd(from, -1)) : null;
+  const cmp = c && c.n > 0 ? c : null;
+  renderReportControls(r, cmp);
+  document.querySelectorAll('#rpTabs .tab').forEach(b => b.classList.toggle('active', b.dataset.t === rpState.tab));
+  const evo = document.getElementById('rpPaneEvo'), body = document.getElementById('rpBody');
+  evo.style.display = rpState.tab === 'evo' ? '' : 'none';
+  if (rpState.tab === 'evo') { body.innerHTML = ''; renderEvolution(); return; }
+  if (!r.n) { body.innerHTML = '<div class="empty-state">Nicio înregistrare în perioada aleasă.</div>'; return; }
+  body.innerHTML = rpState.tab === 'fuel' ? rpTabFuel(r, cmp) : rpState.tab === 'general' ? rpTabGeneral(r, cmp) : rpTabList(r, cmp, rpState.tab);
+}
+function exportPeriodCSV() {
+  let { from, to } = rpRange();
+  if (to > today()) to = today();
+  const inR = x => x.date >= from && x.date <= to;
+  const rows = [['Tip', 'Data', 'Descriere', 'Categorie', 'Suma (lei)']];
+  vehicleIncomes().filter(inR).forEach(i => rows.push(['Venit', i.date, i.description, incomeCatLabel(i.category), i.amount]));
+  vehicleFuels().filter(inR).forEach(f => rows.push(['Combustibil', f.date, f.liters + ' L' + (f.station ? ' · ' + f.station : ''), 'combustibil', -f.totalPrice]));
+  vehicleExpenses().filter(inR).forEach(e => rows.push(['Cheltuială', e.date, e.description, catLabel(e.category), -e.amount]));
+  vehicleShifts().filter(inR).forEach(s => rows.push(['Ore', s.date, s.hours + ' h', 'ore', '']));
+  rows.sort((a, b) => (a[0] === 'Tip' ? -1 : b[0] === 'Tip' ? 1 : a[1].localeCompare(b[1])));
+  const csv = '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+  return shareOrDownload('autotrack_' + from + '_' + to + '.csv', 'text/csv;charset=utf-8', csv);
+}
+
+function renderEvolution() {
+  renderBreakEven();
+
+  // Monthly total costs
+  const all = [
+    ...vehicleFuels().map(f => ({ date: f.date, amount: f.totalPrice })),
+    ...vehicleExpenses().map(e => ({ date: e.date, amount: e.amount }))
+  ];
+  const monthly = {};
+  all.forEach(({ date, amount }) => {
+    const m = date.slice(0, 7);
+    monthly[m] = (monthly[m] || 0) + amount;
+  });
+  const mKeys = Object.keys(monthly).sort().slice(-6);
+  renderBarChart('monthlyChart', mKeys.map(k => k.slice(5)), mKeys.map(k => monthly[k]), 'var(--accent2)', v => fmt(v));
+
+  // Cost per km pe lună: (combustibil + cheltuieli din lună) ÷ km parcurși în lună.
+  // Km se calculează din diferența de odometru între alimentări consecutive, atribuită lunii alimentării mai noi.
+  const odo = vehicleFuels().filter(f => Number(f.odometer) > 0).sort((a, b) => a.date.localeCompare(b.date) || a.odometer - b.odometer);
+  const kmByMonth = {};
+  for (let i = 1; i < odo.length; i++) {
+    const d = odo[i].odometer - odo[i - 1].odometer;
+    if (d > 0) { const m = odo[i].date.slice(0, 7); kmByMonth[m] = (kmByMonth[m] || 0) + d; }
+  }
+  const cpkKeys = Object.keys(kmByMonth).filter(m => kmByMonth[m] >= 100 && monthly[m] > 0).sort().slice(-8);
+  const cpkEl = document.getElementById('costKmChart');
+  if (cpkKeys.length) {
+    renderBarChart('costKmChart', cpkKeys.map(k => k.slice(2)), cpkKeys.map(k => monthly[k] / kmByMonth[k]), 'var(--warn)', v => v.toFixed(2));
+  } else if (cpkEl) {
+    cpkEl.innerHTML = '<div style="color:var(--muted);font-size:13px;margin:auto;text-align:center">Nu sunt destule date: am nevoie de cel puțin două alimentări cu odometru în aceeași lună sau în luni consecutive.</div>';
+  }
+
+  // Category summary
+  const fuels = vehicleFuels();
+  const exps = vehicleExpenses();
+  const cats = [
+    { name: 'Combustibil', amount: fuels.reduce((s, f) => s + f.totalPrice, 0), color: 'var(--fuel)' },
+    { name: 'Service', amount: exps.filter(e => e.category === 'service').reduce((s, e) => s + e.amount, 0), color: 'var(--service)' },
+    { name: 'Asigurare', amount: exps.filter(e => e.category === 'insurance').reduce((s, e) => s + e.amount, 0), color: 'var(--insurance)' },
+    { name: 'Taxe', amount: exps.filter(e => e.category === 'tax').reduce((s, e) => s + e.amount, 0), color: 'var(--other)' },
+    { name: 'Altele', amount: exps.filter(e => e.category === 'other').reduce((s, e) => s + e.amount, 0), color: 'var(--muted)' },
+  ].filter(c => c.amount > 0);
+  const total = cats.reduce((s, c) => s + c.amount, 0);
+  document.getElementById('categoryReport').innerHTML = cats.length ? cats.map(c => `
+    <div style="margin-bottom:10px">
+      <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+        <span style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:${c.color};display:inline-block"></span>${c.name}</span>
+        <span>${fmt(c.amount)} lei <span style="color:var(--muted)">(${total ? (c.amount/total*100).toFixed(0) : 0}%)</span></span>
+      </div>
+      <div style="height:6px;background:var(--border);border-radius:3px">
+        <div style="height:100%;width:${total ? c.amount/total*100 : 0}%;background:${c.color};border-radius:3px"></div>
+      </div>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:13px">Nicio cheltuială</div>';
+}
+
+function renderBreakEven() {
+  const el = document.getElementById('breakEvenChart');
+  const badge = document.getElementById('breakEvenBadge');
+  const info = document.getElementById('breakEvenInfo');
+  const carCost = Number(state.settings.carPurchasePrice) || 0;
+  const purchaseDate = state.settings.carPurchaseDate || null;
+
+  if (!carCost) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;display:flex;align-items:center;justify-content:center;height:100%">Introdu costul mașinii în <strong style="color:var(--text);margin:0 4px">Setări → Cost achiziție vehicul</strong> pentru a vedea break-even-ul.</div>';
+    badge.textContent = '';
+    info.innerHTML = '';
+    return;
+  }
+
+  // Build monthly timeline of costs and incomes
+  const allEvents = [
+    ...vehicleFuels().map(f => ({ date: f.date.slice(0,7), cost: f.totalPrice, income: 0 })),
+    ...vehicleExpenses().map(e => ({ date: e.date.slice(0,7), cost: e.amount, income: 0 })),
+    ...vehicleIncomes().map(i => ({ date: i.date.slice(0,7), cost: 0, income: i.amount }))
+  ];
+
+  if (!allEvents.length) {
+    el.innerHTML = '<div style="color:var(--muted);font-size:13px;display:flex;align-items:center;justify-content:center;height:100%">Insuficiente date. Importă sau adaugă înregistrări.</div>';
+    info.innerHTML = ''; return;
+  }
+
+  // Collect all months
+  const monthSet = new Set(allEvents.map(e => e.date));
+  if (purchaseDate) monthSet.add(purchaseDate.slice(0,7));
+  const months = Array.from(monthSet).sort();
+
+  // Build per-month totals
+  const byMonth = {};
+  allEvents.forEach(e => {
+    if (!byMonth[e.date]) byMonth[e.date] = { cost: 0, income: 0 };
+    byMonth[e.date].cost += e.cost;
+    byMonth[e.date].income += e.income;
+  });
+
+  // Build cumulative series — costs start from carCost
+  let cumCost = carCost, cumIncome = 0;
+  const series = [];
+  let breakEvenMonth = null, breakEvenIdx = null;
+
+  months.forEach((m, i) => {
+    const d = byMonth[m] || { cost: 0, income: 0 };
+    const prevCost = cumCost;
+    cumCost += d.cost;
+    cumIncome += d.income;
+
+    // Detect crossover
+    if (!breakEvenMonth && cumIncome >= cumCost) {
+      breakEvenMonth = m;
+      breakEvenIdx = i;
+    } else if (!breakEvenMonth && i > 0 && series[i-1] && series[i-1].income < series[i-1].cost && cumIncome >= cumCost) {
+      breakEvenMonth = m; breakEvenIdx = i;
+    }
+    series.push({ m, cumCost, cumIncome });
+  });
+
+  // SVG line chart
+  const W = el.offsetWidth || 600, H = 200;
+  const PAD = { top: 20, right: 20, bottom: 30, left: 60 };
+  const chartW = W - PAD.left - PAD.right;
+  const chartH = H - PAD.top - PAD.bottom;
+  const maxVal = Math.max(...series.map(s => Math.max(s.cumCost, s.cumIncome)), carCost) * 1.05;
+  const n = series.length;
+
+  function xPos(i) { return PAD.left + (n <= 1 ? chartW/2 : i / (n-1) * chartW); }
+  function yPos(v) { return PAD.top + chartH - (v / maxVal * chartH); }
+
+  // Y axis labels
+  const yTicks = 4;
+  let yLabels = '';
+  for (let i = 0; i <= yTicks; i++) {
+    const v = maxVal * i / yTicks;
+    const y = yPos(v);
+    yLabels += `<line x1="${PAD.left}" y1="${y}" x2="${W - PAD.right}" y2="${y}" stroke="var(--border)" stroke-width="1"/>`;
+    yLabels += `<text x="${PAD.left - 6}" y="${y + 4}" text-anchor="end" font-size="10" fill="var(--muted)">${v >= 1000 ? (v/1000).toFixed(0)+'k' : v.toFixed(0)}</text>`;
+  }
+
+  // X axis labels (show every 2nd month if many)
+  let xLabels = '';
+  const step = n > 12 ? Math.ceil(n / 10) : (n > 6 ? 2 : 1);
+  series.forEach((s, i) => {
+    if (i % step === 0 || i === n-1) {
+      xLabels += `<text x="${xPos(i)}" y="${H - 4}" text-anchor="middle" font-size="10" fill="var(--muted)">${s.m.slice(5)}.${s.m.slice(2,4)}</text>`;
+    }
+  });
+
+  // Cost line (red)
+  const costPath = series.map((s,i) => `${i===0?'M':'L'}${xPos(i)},${yPos(s.cumCost)}`).join(' ');
+  // Income line (green)
+  const incPath = series.map((s,i) => `${i===0?'M':'L'}${xPos(i)},${yPos(s.cumIncome)}`).join(' ');
+
+  // Fill area under income line
+  const incFill = incPath + ` L${xPos(n-1)},${PAD.top+chartH} L${xPos(0)},${PAD.top+chartH} Z`;
+
+  // Break-even marker
+  let beMarker = '';
+  if (breakEvenIdx !== null) {
+    const bx = xPos(breakEvenIdx);
+    const by = yPos(series[breakEvenIdx].cumIncome);
+    beMarker = `
+      <line x1="${bx}" y1="${PAD.top}" x2="${bx}" y2="${PAD.top+chartH}" stroke="var(--warn)" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <circle cx="${bx}" cy="${by}" r="6" fill="var(--warn)" stroke="var(--surface)" stroke-width="2"/>
+      <text x="${bx+8}" y="${by-8}" font-size="11" font-weight="600" fill="var(--warn)">Break-even</text>`;
+  }
+
+  // Car cost horizontal dashed line
+  const carY = yPos(carCost);
+  const carLine = carCost <= maxVal
+    ? `<line x1="${PAD.left}" y1="${carY}" x2="${W-PAD.right}" y2="${carY}" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3,3"/>
+       <text x="${PAD.left+4}" y="${carY-4}" font-size="10" fill="var(--muted)">Cost mașină</text>`
+    : '';
+
+  el.innerHTML = `<svg width="100%" height="${H}" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="overflow:visible">
+    ${yLabels}${xLabels}${carLine}
+    <path d="${incFill}" fill="rgba(109,213,168,0.08)"/>
+    <path d="${costPath}" fill="none" stroke="var(--danger)" stroke-width="2.5" stroke-linejoin="round"/>
+    <path d="${incPath}" fill="none" stroke="var(--accent2)" stroke-width="2.5" stroke-linejoin="round"/>
+    ${beMarker}
+    <circle cx="${xPos(n-1)}" cy="${yPos(series[n-1].cumCost)}" r="4" fill="var(--danger)"/>
+    <circle cx="${xPos(n-1)}" cy="${yPos(series[n-1].cumIncome)}" r="4" fill="var(--accent2)"/>
+  </svg>`;
+
+  // Badge + info
+  const lastCost = series[n-1].cumCost;
+  const lastInc = series[n-1].cumIncome;
+  const gap = lastInc - lastCost;
+
+  if (breakEvenMonth) {
+    badge.innerHTML = `&nbsp;<span style="background:rgba(109,213,168,.2);color:var(--accent2);padding:2px 8px;border-radius:20px;font-size:12px">✅ Break-even atins: ${breakEvenMonth}</span>`;
+  } else {
+    badge.innerHTML = `&nbsp;<span style="background:rgba(224,92,110,.15);color:var(--danger);padding:2px 8px;border-radius:20px;font-size:12px">⏳ Break-even neîncă atins</span>`;
+  }
+
+  // Projection: if not reached, estimate when
+  let projection = '';
+  if (!breakEvenMonth && n >= 2) {
+    // Average monthly profit from last 3 months
+    const last3 = series.slice(-3);
+    const firstOf3 = series[Math.max(0, n-4)];
+    const monthlyProfit = (last3[last3.length-1].cumIncome - last3[last3.length-1].cumCost - (firstOf3.cumIncome - firstOf3.cumCost)) / 3;
+    if (monthlyProfit > 0) {
+      const monthsLeft = Math.ceil(Math.abs(gap) / monthlyProfit);
+      const projDate = new Date(series[n-1].m + '-01');
+      projDate.setMonth(projDate.getMonth() + monthsLeft);
+      const projStr = projDate.toISOString().slice(0,7);
+      projection = `<div style="padding:10px 14px;background:rgba(245,166,35,.08);border:1px solid rgba(245,166,35,.2);border-radius:8px;font-size:13px">
+        ⏱ La ritmul actual, break-even estimat în <strong style="color:var(--warn)">${projStr}</strong> (încă ~${monthsLeft} luni · mai lipsesc <strong>${fmt(Math.abs(gap))} lei</strong>)
+      </div>`;
+    }
+  }
+
+  info.innerHTML = `
+    <div style="display:flex;gap:16px;flex-wrap:wrap;margin-bottom:${projection?'12px':'0'}">
+      <div style="background:var(--surface2);border-radius:8px;padding:10px 16px;font-size:13px">
+        <div style="color:var(--muted);font-size:12px;margin-bottom:3px">Cost total cumulat</div>
+        <div style="color:var(--danger);font-weight:600">${fmt(lastCost)} lei</div>
+        <div style="color:var(--muted);font-size:12px">(mașină + cheltuieli)</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:10px 16px;font-size:13px">
+        <div style="color:var(--muted);font-size:12px;margin-bottom:3px">Venituri cumulate</div>
+        <div style="color:var(--accent2);font-weight:600">${fmt(lastInc)} lei</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:8px;padding:10px 16px;font-size:13px">
+        <div style="color:var(--muted);font-size:12px;margin-bottom:3px">${gap >= 0 ? 'Profit net total' : 'Deficit rămas'}</div>
+        <div style="color:${gap>=0?'var(--accent2)':'var(--danger)'};font-weight:600">${fmt(Math.abs(gap))} lei</div>
+      </div>
+    </div>
+    ${projection}`;
+}
+
+// ── SETTINGS ───────────────────────────────────────────────────
+function renderSettings() {
+  const veh = currentVehicle();
+  document.getElementById('vehicleDetails').innerHTML = veh ? `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+      <div><span style="color:var(--muted)">Nume:</span> ${veh.name}</div>
+      <div><span style="color:var(--muted)">Marcă:</span> ${veh.make}</div>
+      <div><span style="color:var(--muted)">Model:</span> ${veh.model}</div>
+      <div><span style="color:var(--muted)">An:</span> ${veh.year}</div>
+      <div><span style="color:var(--muted)">Combustibil:</span> ${veh.fuel}</div>
+    </div>` : '';
+  document.getElementById('oilInterval').value = state.settings.oilInterval || '';
+  document.getElementById('lastOilKm').value = state.settings.lastOilKm || '';
+  document.getElementById('carPurchasePrice').value = state.settings.carPurchasePrice || '';
+  document.getElementById('carPurchaseDate').value = state.settings.carPurchaseDate || '';
+  const vl = document.getElementById('appVersionLine');
+  if (vl) vl.textContent = 'AutoTrack · versiunea ' + APP_VERSION + (state.settings.lastBackupAt ? ' · ultimul backup: ' + fmtDate(state.settings.lastBackupAt.slice(0, 10)) : ' · niciun backup făcut încă');
+}
+function saveSetting(key, val) {
+  state.settings[key] = Number(val); save();
+}
+function saveSettingStr(key, val) {
+  state.settings[key] = val; save();
+}
+
+// ── MODALS ─────────────────────────────────────────────────────
+let _editId = null;
+function openModal(type) {
+  _editId = null;
+  const overlay = document.getElementById('modalOverlay');
+  const title = document.getElementById('modalTitle');
+  const body = document.getElementById('modalBody');
+  overlay.classList.remove('hidden');
+
+  if (type === 'fuel' || type === 'quick') {
+    title.textContent = 'Alimentare nouă';
+    body.innerHTML = `
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="fDate">Data</label>
+          <input type="date" class="form-input" id="fDate" value="${today()}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fOdo">Odometru (km)</label>
+          <input type="number" class="form-input" id="fOdo" placeholder="ex: 48500">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="fLiters">Litri</label>
+          <input type="number" class="form-input" id="fLiters" placeholder="ex: 45.5" step="0.01" oninput="calcFuelTotal()">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fPpl">Preț/litru (lei)</label>
+          <input type="number" class="form-input" id="fPpl" placeholder="ex: 24.5" step="0.01" oninput="calcFuelTotal()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fTotal">Total (lei) <span style="color:var(--muted)">(calculat automat)</span></label>
+        <input type="number" class="form-input" id="fTotal" placeholder="ex: 350" step="0.01">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="fStation">Stație (opțional)</label>
+        <input type="text" class="form-input" id="fStation" placeholder="ex: Petrom, Lukoil...">
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Anulează</button>
+        <button class="btn btn-primary" onclick="saveFuel()">Salvează</button>
+      </div>`;
+  } else if (type === 'expense') {
+    title.textContent = 'Cheltuială nouă';
+    body.innerHTML = `
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="eDate">Data</label>
+          <input type="date" class="form-input" id="eDate" value="${today()}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="eCat">Categorie</label>
+          <select class="form-input" id="eCat">
+            <option value="service">Service</option>
+            <option value="insurance">Asigurare (RCA/CASCO)</option>
+            <option value="tax">Taxe (impozit, parcare)</option>
+            <option value="other">Altele</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="eDesc">Descriere</label>
+        <input type="text" class="form-input" id="eDesc" placeholder="ex: Schimb ulei + filtre">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="eAmount">Sumă (lei)</label>
+          <input type="number" class="form-input" id="eAmount" placeholder="ex: 650">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="eOdo">Odometru (opțional)</label>
+          <input type="number" class="form-input" id="eOdo" placeholder="ex: 48500">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Anulează</button>
+        <button class="btn btn-primary" onclick="saveExpense()">Salvează</button>
+      </div>`;
+  } else if (type === 'income') {
+    title.textContent = 'Venit nou';
+    body.innerHTML = `
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="iDate">Data</label>
+          <input type="date" class="form-input" id="iDate" value="${today()}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="iCat">Categorie</label>
+          <select class="form-input" id="iCat">
+            <option value="ridesharing">🚕 Ridesharing (Bolt/Uber)</option>
+            <option value="livrari">📦 Livrări</option>
+            <option value="inchiriere">🔑 Închiriere</option>
+            <option value="altele">💵 Altele</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="iDesc">Descriere</label>
+        <input type="text" class="form-input" id="iDesc" placeholder="ex: Bolt weekend 15-16 iun">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="iAmount">Sumă încasată (lei)</label>
+          <input type="number" class="form-input" id="iAmount" placeholder="ex: 450" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="iKm">Km parcurși (opțional)</label>
+          <input type="number" class="form-input" id="iKm" placeholder="ex: 120">
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Anulează</button>
+        <button class="btn btn-primary" style="background:var(--accent2);color:#111" onclick="saveIncome()">Salvează venit</button>
+      </div>`;
+  } else if (type === 'more') {
+    title.textContent = 'Mai mult';
+    const go = (pg, ico, name) => `<button class="chooser-btn" onclick="closeModal();showPage('${pg}')"><span class="chooser-ico">${ico}</span><span class="chooser-name">${name}</span></button>`;
+    body.innerHTML = `<div class="chooser-grid">
+      ${go('fuel','⛽','Alimentări')}${go('expenses','💳','Cheltuieli')}${go('documents','📄','Documente')}${go('settings','⚙️','Setări și backup')}
+    </div>
+    <div class="form-group" style="margin-top:18px"><label class="form-label">Vehicul activ</label>
+      <select class="form-input" onchange="switchVehicle(this.value)">${state.vehicles.map(v => `<option value="${v.id}" ${v.id === state.activeVehicle ? 'selected' : ''}>${escHtml(v.name)}</option>`).join('')}</select>
+      <button class="btn btn-secondary" style="margin-top:10px;width:100%" onclick="openModal('vehicle')">+ Adaugă vehicul</button></div>`;
+  } else if (type === 'chooser') {
+    title.textContent = 'Ce vrei să adaugi?';
+    const opt = (t, ico, name, sub) => `<button class="chooser-btn" onclick="openModal('${t}')"><span class="chooser-ico">${ico}</span><span class="chooser-name">${name}</span><span class="chooser-sub">${sub}</span></button>`;
+    body.innerHTML = `<div class="chooser-grid">
+      ${opt('workday', '🚕', 'Zi lucrată', 'venit + ore dintr-un pas')}
+      ${opt('fuel', '⛽', 'Alimentare', 'litri, preț, odometru')}
+      ${opt('expense', '💳', 'Cheltuială', 'service, taxe, amenzi...')}
+      ${opt('income', '💵', 'Venit', 'Bolt, livrări, închiriere')}
+      ${opt('shift', '⏱️', 'Ore lucrate', 'tură, început / sfârșit')}
+      ${opt('document', '📄', 'Document', 'RCA, ITP, taxa de drum')}
+    </div>
+    <div class="form-actions" style="margin-top:16px"><button class="btn btn-secondary" onclick="closeModal()">Închide</button></div>`;
+  } else if (type === 'workday') {
+    title.textContent = 'Zi lucrată';
+    body.innerHTML = `
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="shDate">Data turei</label>
+          <input type="date" class="form-input" id="shDate" value="${shiftDefaultDate()}">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="wdIncome">Venit total (lei)</label>
+          <input type="number" class="form-input" id="wdIncome" placeholder="ex: 1450" step="0.01" autofocus>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="shStart">Început (opțional)</label>
+          <input type="time" class="form-input" id="shStart" oninput="shiftCalc()">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="shEnd">Sfârșit (opțional)</label>
+          <input type="time" class="form-input" id="shEnd" oninput="shiftCalc()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="shHours">Ore lucrate <span style="color:var(--muted)">(din ore sau direct, ex: 9.5)</span></label>
+        <input type="number" class="form-input" id="shHours" placeholder="ex: 9.5" step="0.25" min="0" max="24">
+      </div>
+      <div style="font-size:12px;color:var(--muted)">Se creează o înregistrare de venit (Ridesharing) și una de ore, pe aceeași dată. Poți completa doar una dintre ele.</div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="openModal('chooser')">Înapoi</button>
+        <button class="btn btn-primary" onclick="saveWorkday()">Salvează</button>
+      </div>`;
+  } else if (type === 'shift') {
+    title.textContent = 'Ore lucrate';
+    body.innerHTML = `
+      <div class="form-group">
+        <label class="form-label" for="shDate">Data turei (ziua în care ai început)</label>
+        <input type="date" class="form-input" id="shDate" value="${shiftDefaultDate()}">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="shStart">Început (opțional)</label>
+          <input type="time" class="form-input" id="shStart" oninput="shiftCalc()">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="shEnd">Sfârșit (opțional)</label>
+          <input type="time" class="form-input" id="shEnd" oninput="shiftCalc()">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="shHours">Ore lucrate <span style="color:var(--muted)">(calculat din ore, sau scrie direct, ex: 9.5)</span></label>
+        <input type="number" class="form-input" id="shHours" placeholder="ex: 9.5" step="0.25" min="0" max="24">
+      </div>
+      <div style="font-size:12px;color:var(--muted)">Dacă tura trece de miezul nopții, pune data în care a început. Poți adăuga mai multe ture în aceeași zi, orele se adună.</div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Anulează</button>
+        <button class="btn btn-primary" onclick="saveShift()">Salvează</button>
+      </div>`;
+  } else if (type === 'document') {
+    title.textContent = 'Document nou';
+    body.innerHTML = `
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="dType">Tip document</label>
+          <select class="form-input" id="dType" onchange="docSyncDuration()">
+            <option value="rca">🛡️ Asigurare RCA</option>
+            <option value="itp">🔍 Revizie tehnică (ITP)</option>
+            <option value="roadtax">🛣️ Taxa de drum</option>
+            <option value="casco">🛡️ Asigurare CASCO</option>
+            <option value="other">📄 Altele</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="dMonths">Valabilitate</label>
+          <select class="form-input" id="dMonths" onchange="docAutoExpiry()">
+            <option value="1">1 lună</option>
+            <option value="3">3 luni</option>
+            <option value="6">6 luni</option>
+            <option value="12" selected>12 luni</option>
+            <option value="24">24 luni</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="dStart">Data începerii</label>
+          <input type="date" class="form-input" id="dStart" value="${today()}" onchange="docAutoExpiry()">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="dExpiry">Expiră la</label>
+          <input type="date" class="form-input" id="dExpiry">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="dCost">Cost (lei)</label>
+          <input type="number" class="form-input" id="dCost" placeholder="ex: 1200" step="0.01">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="dNotes">Furnizor / notițe</label>
+          <input type="text" class="form-input" id="dNotes" placeholder="ex: Asito, nr. poliță">
+        </div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);cursor:pointer">
+        <input type="checkbox" id="dAddExpense" checked> Înregistrează costul și la Cheltuieli
+      </label>
+      <div style="font-size:12px;color:var(--muted);margin-top:6px">Debifează dacă această cheltuială e deja în AutoTrack (ex. importată din Drivvo), ca să nu se numere de două ori.</div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Anulează</button>
+        <button class="btn btn-primary" onclick="saveDocument()">Salvează</button>
+      </div>`;
+    docSyncDuration();
+  } else if (type === 'vehicle') {
+    title.textContent = 'Vehicul nou';
+    body.innerHTML = `
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="vName">Nume/Poreclă</label>
+          <input type="text" class="form-input" id="vName" placeholder="ex: Golf-ul meu">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="vYear">An fabricație</label>
+          <input type="number" class="form-input" id="vYear" placeholder="ex: 2019">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="vMake">Marcă</label>
+          <input type="text" class="form-input" id="vMake" placeholder="ex: Toyota">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="vModel">Model</label>
+          <input type="text" class="form-input" id="vModel" placeholder="ex: Corolla">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="vFuel">Tip combustibil</label>
+        <select class="form-input" id="vFuel">
+          <option>Benzină</option>
+          <option>Motorină</option>
+          <option>GPL</option>
+          <option>Electric</option>
+          <option>Hibrid</option>
+        </select>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-secondary" onclick="closeModal()">Anulează</button>
+        <button class="btn btn-primary" onclick="saveVehicle()">Salvează</button>
+      </div>`;
+  }
+}
+
+function calcFuelTotal() {
+  const l = parseFloat(document.getElementById('fLiters')?.value) || 0;
+  const p = parseFloat(document.getElementById('fPpl')?.value) || 0;
+  if (l && p) document.getElementById('fTotal').value = (l * p).toFixed(2);
+}
+
+function saveFuel() {
+  const odo = parseInt(document.getElementById('fOdo').value);
+  const liters = parseFloat(document.getElementById('fLiters').value);
+  const ppl = parseFloat(document.getElementById('fPpl').value);
+  const total = parseFloat(document.getElementById('fTotal').value);
+  if (!odo || !liters || !total) { alert('Completează odometrul, litrii și totalul!'); return; }
+  const rec = {
+    date: document.getElementById('fDate').value,
+    odometer: odo, liters, pricePerLiter: ppl, totalPrice: total,
+    station: document.getElementById('fStation').value
+  };
+  const cur = _editId && state.fuels.find(x => x.id === _editId);
+  if (cur) Object.assign(cur, rec); else state.fuels.push({ id: uid(), vehicleId: state.activeVehicle, ...rec });
+  save(); closeModal(); renderPage('fuel'); renderDashboard();
+}
+
+function saveExpense() {
+  const amount = parseFloat(document.getElementById('eAmount').value);
+  const desc = document.getElementById('eDesc').value;
+  if (!amount || !desc) { alert('Completează descrierea și suma!'); return; }
+  const rec = {
+    date: document.getElementById('eDate').value,
+    category: document.getElementById('eCat').value,
+    description: desc, amount,
+    odometer: parseInt(document.getElementById('eOdo').value) || null
+  };
+  const cur = _editId && state.expenses.find(x => x.id === _editId);
+  if (cur) Object.assign(cur, rec); else state.expenses.push({ id: uid(), vehicleId: state.activeVehicle, ...rec });
+  save(); closeModal(); renderPage('expenses'); renderDashboard();
+}
+
+function saveIncome() {
+  const amount = parseFloat(document.getElementById('iAmount').value);
+  const desc = document.getElementById('iDesc').value;
+  if (!amount || !desc) { alert('Completează descrierea și suma!'); return; }
+  if (!state.incomes) state.incomes = [];
+  const rec = {
+    date: document.getElementById('iDate').value,
+    category: document.getElementById('iCat').value,
+    description: desc, amount,
+    km: parseInt(document.getElementById('iKm').value) || null
+  };
+  const cur = _editId && state.incomes.find(x => x.id === _editId);
+  if (cur) Object.assign(cur, rec); else state.incomes.push({ id: uid(), vehicleId: state.activeVehicle, ...rec });
+  save(); closeModal(); renderIncomePage(); renderDashboard();
+}
+
+function saveVehicle() {
+  const name = document.getElementById('vName').value;
+  const make = document.getElementById('vMake').value;
+  const model = document.getElementById('vModel').value;
+  if (!name || !make || !model) { alert('Completează toate câmpurile!'); return; }
+  const id = uid();
+  state.vehicles.push({ id, name, make, model, year: parseInt(document.getElementById('vYear').value), fuel: document.getElementById('vFuel').value });
+  state.activeVehicle = id;
+  save(); closeModal(); populateVehicleSelect(); renderDashboard();
+}
+
+// ── INCOME PAGE ────────────────────────────────────────────────
+function renderIncomePage() {
+  const incomes = vehicleIncomes();
+  const tc = totalCost();
+  const inc = totalIncome();
+  const km = totalKm();
+  const profit = inc - tc;
+
+  document.getElementById('incomeTotal').textContent = fmt(inc) + ' lei';
+  document.getElementById('incomeCosts').textContent = fmt(tc) + ' lei';
+
+  const profitEl = document.getElementById('incomeProfit');
+  const profitCard = document.getElementById('profitCard');
+  const profitSub = document.getElementById('incomeProfitSub');
+  profitEl.textContent = fmt(profit) + ' lei';
+  profitEl.style.color = profit >= 0 ? 'var(--accent2)' : 'var(--danger)';
+  profitCard.style.borderTop = '3px solid ' + (profit >= 0 ? 'var(--accent2)' : 'var(--danger)');
+  profitSub.textContent = profit >= 0 ? '✅ pe profit' : '❌ pe pierdere';
+
+  const incPerKm = km > 0 && inc > 0 ? (inc / km).toFixed(2) : '—';
+  document.getElementById('incomePerKm').textContent = incPerKm !== '—' ? incPerKm + ' lei' : '— lei';
+
+  // Income vs cost chart
+  const allEntries = [
+    ...vehicleFuels().map(f => ({ date: f.date, cost: f.totalPrice, income: 0 })),
+    ...vehicleExpenses().map(e => ({ date: e.date, cost: e.amount, income: 0 })),
+    ...incomes.map(i => ({ date: i.date, cost: 0, income: i.amount }))
+  ];
+  const monthly = {};
+  allEntries.forEach(({ date, cost, income }) => {
+    const m = date.slice(0, 7);
+    if (!monthly[m]) monthly[m] = { cost: 0, income: 0 };
+    monthly[m].cost += cost;
+    monthly[m].income += income;
+  });
+  const mKeys = Object.keys(monthly).sort().slice(-6);
+  const chartEl = document.getElementById('incomeVsCostChart');
+  if (!mKeys.length) { chartEl.innerHTML = '<div style="color:var(--muted);font-size:13px;margin:auto">Insuficiente date</div>'; }
+  else {
+    const maxVal = Math.max(...mKeys.flatMap(k => [monthly[k].cost, monthly[k].income]), 1);
+    chartEl.innerHTML = mKeys.map(m => `
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end">
+        <div style="font-size:12px;color:var(--muted);white-space:nowrap">${m.slice(5)}</div>
+        <div style="width:100%;display:flex;gap:2px;align-items:flex-end;height:110px">
+          <div style="flex:1;border-radius:3px 3px 0 0;background:var(--danger);min-height:3px;height:${monthly[m].cost/maxVal*100}%" title="Cheltuieli: ${fmt(monthly[m].cost)} lei"></div>
+          <div style="flex:1;border-radius:3px 3px 0 0;background:var(--accent2);min-height:3px;height:${monthly[m].income/maxVal*100}%" title="Venituri: ${fmt(monthly[m].income)} lei"></div>
+        </div>
+      </div>`).join('') + `
+      <div style="position:absolute;bottom:-20px;left:0;right:0;display:flex;gap:12px;font-size:12px;color:var(--muted);justify-content:center">
+        <span><span style="display:inline-block;width:8px;height:8px;background:var(--danger);border-radius:2px;margin-right:4px"></span>Cheltuieli</span>
+        <span><span style="display:inline-block;width:8px;height:8px;background:var(--accent2);border-radius:2px;margin-right:4px"></span>Venituri</span>
+      </div>`;
+    chartEl.style.position = 'relative';
+  }
+
+  // Category breakdown
+  const cats = {};
+  incomes.forEach(i => { cats[i.category] = (cats[i.category] || 0) + i.amount; });
+  const catColors = { ridesharing: 'var(--accent)', livrari: 'var(--accent2)', inchiriere: 'var(--warn)', altele: 'var(--other)' };
+  const catLabels = { ridesharing: '🚕 Ridesharing (Bolt/Uber)', livrari: '📦 Livrări', inchiriere: '🔑 Închiriere', altele: '💰 Altele' };
+  const catReport = document.getElementById('incomeCatReport');
+  if (!Object.keys(cats).length) { catReport.innerHTML = '<div style="color:var(--muted);font-size:13px">Nicio înregistrare</div>'; }
+  else {
+    const totCat = Object.values(cats).reduce((s,v) => s+v, 0);
+    catReport.innerHTML = Object.entries(cats).map(([k, v]) => `
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+          <span>${catLabels[k] || k}</span>
+          <span>${fmt(v)} lei <span style="color:var(--muted)">(${(v/totCat*100).toFixed(0)}%)</span></span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px">
+          <div style="height:100%;width:${v/totCat*100}%;background:${catColors[k]||'var(--muted)'};border-radius:3px"></div>
+        </div>
+      </div>`).join('');
+  }
+
+  // Income list
+  const el = document.getElementById('incomeList');
+  if (!incomes.length) { el.innerHTML = '<div class="empty-state">Niciun venit înregistrat. Folosești mașina pentru Bolt, livrări sau o închiriezi?</div>'; return; }
+  el.innerHTML = incomes.map(i => `
+    <div class="expense-item">
+      <div class="expense-dot" style="background:var(--accent2)"></div>
+      <div class="expense-info">
+        <div class="expense-name">${incomeCatIcon(i.category)} ${i.description}</div>
+        <div class="expense-meta">${i.date} · ${incomeCatLabel(i.category)}${i.km ? ' · ' + i.km + ' km' : ''}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="expense-amount" style="color:var(--accent2)">+${fmt(i.amount)} lei</div>
+        <button class="expense-delete" title="Editează" aria-label="Editează" onclick="editRecord('income','${i.id}')">✏️</button>
+        <button class="expense-delete" title="Șterge" aria-label="Șterge" onclick="deleteIncome('${i.id}')">✕</button>
+      </div>
+    </div>`).join('');
+}
+
+function deleteIncome(id) {
+  if (!confirm('Ștergi acest venit?')) return;
+  state.incomes = (state.incomes || []).filter(i => i.id !== id);
+  save(); renderIncomePage(); renderDashboard();
+}
+
+function incomeCatLabel(c) { return { ridesharing: 'Ridesharing', livrari: 'Livrări', inchiriere: 'Închiriere', altele: 'Altele' }[c] || c; }
+function incomeCatIcon(c) { return { ridesharing: '🚕', livrari: '📦', inchiriere: '🔑', altele: '💵' }[c] || '💵'; }
+
+
+function deleteFuel(id) {
+  if (!confirm('Ștergi această alimentare?')) return;
+  state.fuels = state.fuels.filter(f => f.id !== id);
+  save(); renderFuelList(); renderDashboard();
+}
+function deleteExpense(id) {
+  if (!confirm('Ștergi această cheltuială?')) return;
+  state.expenses = state.expenses.filter(e => e.id !== id);
+  save(); renderExpenseList(expenseFilter); renderDashboard();
+}
+
+
+// ── EDITARE ÎNREGISTRĂRI ───────────────────────────────────────
+function editRecord(kind, id) {
+  const lists = { fuel: state.fuels, expense: state.expenses, income: state.incomes, shift: state.shifts, document: state.documents };
+  const rec = (lists[kind] || []).find(r => r.id === id);
+  if (!rec) return;
+  openModal(kind);
+  _editId = id;
+  const set = (el, v) => {
+    const e = document.getElementById(el); if (!e) return;
+    if (e.tagName === 'SELECT' && v != null && ![...e.options].some(o => o.value === String(v))) e.add(new Option(String(v), String(v)));
+    e.value = v == null ? '' : v;
+  };
+  const titles = { fuel: 'Editează alimentarea', expense: 'Editează cheltuiala', income: 'Editează venitul', shift: 'Editează orele', document: 'Editează documentul' };
+  document.getElementById('modalTitle').textContent = titles[kind];
+  const saveBtn = [...document.querySelectorAll('#modalBody .form-actions .btn-primary')][0];
+  if (saveBtn) saveBtn.textContent = 'Salvează modificările';
+  if (kind === 'fuel') { set('fDate', rec.date); set('fOdo', rec.odometer); set('fLiters', rec.liters); set('fPpl', rec.pricePerLiter); set('fTotal', rec.totalPrice); set('fStation', rec.station); }
+  if (kind === 'expense') { set('eDate', rec.date); set('eCat', rec.category); set('eDesc', rec.description); set('eAmount', rec.amount); set('eOdo', rec.odometer); }
+  if (kind === 'income') { set('iDate', rec.date); set('iCat', rec.category); set('iDesc', rec.description); set('iAmount', rec.amount); set('iKm', rec.km); }
+  if (kind === 'shift') { set('shDate', rec.date); set('shStart', rec.start); set('shEnd', rec.end); set('shHours', rec.hours); }
+  if (kind === 'document') {
+    set('dType', rec.type); set('dStart', rec.start); set('dExpiry', rec.expiry); set('dCost', rec.cost || ''); set('dNotes', rec.notes);
+    const a = new Date(rec.start + 'T00:00:00'), b = new Date(rec.expiry + 'T00:00:00');
+    const months = Math.round((b - a) / 86400000 / 30.44);
+    const opt = [...document.getElementById('dMonths').options].find(o => Math.abs(parseInt(o.value) - months) <= 1);
+    if (opt) document.getElementById('dMonths').value = opt.value;
+    document.getElementById('dAddExpense').checked = state.expenses.some(x => x.docId === id);
+  }
+}
+
+function closeModal() { _editId = null; document.getElementById('modalOverlay').classList.add('hidden'); }
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+function closeModalOutside(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+
+// ── HOURS (ore lucrate, lei/oră) ───────────────────────────────
+let hoursPeriod = 'all';
+let hoursQuickShowAll = false;
+const WD_NAMES = ['Luni', 'Marți', 'Miercuri', 'Joi', 'Vineri', 'Sâmbătă', 'Duminică'];
+const WD_SHORT = ['Lun', 'Mar', 'Mie', 'Joi', 'Vin', 'Sâm', 'Dum'];
+const MONTH_SHORT = ['Ian', 'Feb', 'Mar', 'Apr', 'Mai', 'Iun', 'Iul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const MIN_N_WEEKDAY = 3;   // zile minime pentru a include o zi a săptămânii în clasament
+const MIN_N_MONTH = 5;     // zile minime pentru a include o lună în clasament
+
+function vehicleShifts() {
+  return (state.shifts || []).filter(s => s.vehicleId === state.activeVehicle).sort((a, b) => b.date.localeCompare(a.date) || (b.start || '').localeCompare(a.start || ''));
+}
+function dateMinusDays(n) {
+  const d = new Date(); d.setDate(d.getDate() - n);
+  return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+function weekdayIdx(dateStr) { return (new Date(dateStr + 'T00:00:00').getDay() + 6) % 7; } // 0 = Luni
+function r1(x) { return (Math.round(x * 10) / 10).toLocaleString('ro', { minimumFractionDigits: 1, maximumFractionDigits: 1 }); }
+
+function shiftCalc() {
+  const s = document.getElementById('shStart')?.value, e = document.getElementById('shEnd')?.value;
+  if (!s || !e) return;
+  const [sh, sm] = s.split(':').map(Number), [eh, em] = e.split(':').map(Number);
+  let mins = (eh * 60 + em) - (sh * 60 + sm);
+  if (mins <= 0) mins += 24 * 60; // tură peste miezul nopții
+  document.getElementById('shHours').value = (Math.round(mins / 60 * 100) / 100).toString();
+}
+
+function saveShift() {
+  const date = document.getElementById('shDate').value;
+  const hours = parseFloat(document.getElementById('shHours').value);
+  if (!date) { alert('Alege data!'); return; }
+  if (!hours || hours <= 0 || hours > 24) { alert('Introdu un număr de ore între 0 și 24!'); return; }
+  if (!state.shifts) state.shifts = [];
+  const rec = { date, start: document.getElementById('shStart').value || '', end: document.getElementById('shEnd').value || '', hours };
+  const cur = _editId && state.shifts.find(x => x.id === _editId);
+  if (cur) Object.assign(cur, rec); else state.shifts.push({ id: uid(), vehicleId: state.activeVehicle, ...rec });
+  save(); closeModal(); renderHoursPage(); renderDashboard();
+}
+function saveWorkday() {
+  const date = document.getElementById('shDate').value;
+  const hours = parseFloat(document.getElementById('shHours').value) || 0;
+  const income = parseFloat(document.getElementById('wdIncome').value) || 0;
+  if (!date) { alert('Alege data!'); return; }
+  if (!hours && !income) { alert('Introdu cel puțin venitul sau orele lucrate!'); return; }
+  if (hours && (hours < 0 || hours > 24)) { alert('Orele trebuie să fie între 0 și 24!'); return; }
+  if (hours > 0) {
+    if (!state.shifts) state.shifts = [];
+    state.shifts.push({ id: uid(), vehicleId: state.activeVehicle, date, start: document.getElementById('shStart').value || '', end: document.getElementById('shEnd').value || '', hours });
+  }
+  if (income > 0) {
+    if (!state.incomes) state.incomes = [];
+    state.incomes.push({ id: uid(), vehicleId: state.activeVehicle, date, category: 'ridesharing', description: 'Ride', amount: income, km: null });
+  }
+  save(); closeModal(); renderDashboard();
+}
+function quickAddHours(date) {
+  const inp = document.getElementById('qf_' + date);
+  const hours = parseFloat(inp && inp.value);
+  if (!hours || hours <= 0 || hours > 24) { alert('Introdu un număr de ore între 0 și 24!'); return; }
+  if (!state.shifts) state.shifts = [];
+  state.shifts.push({ id: uid(), vehicleId: state.activeVehicle, date, start: '', end: '', hours });
+  save(); renderHoursPage(); renderDashboard();
+}
+function deleteShift(id) {
+  if (!confirm('Ștergi această înregistrare de ore?')) return;
+  state.shifts = (state.shifts || []).filter(s => s.id !== id);
+  save(); renderHoursPage(); renderDashboard();
+}
+
+// Calcul central: zile cu ore înregistrate + venitul din acele zile
+function computeHoursStats(period) {
+  const cutoff = period && period !== 'all' ? dateMinusDays(parseInt(period)) : '';
+  const inRange = d => !cutoff || d >= cutoff;
+  const hoursByDate = {};
+  vehicleShifts().filter(s => inRange(s.date)).forEach(s => { hoursByDate[s.date] = (hoursByDate[s.date] || 0) + s.hours; });
+  const incByDateAll = {};
+  vehicleIncomes().filter(i => inRange(i.date)).forEach(i => { incByDateAll[i.date] = (incByDateAll[i.date] || 0) + i.amount; });
+
+  const days = Object.keys(hoursByDate).sort().map(date => {
+    const hours = hoursByDate[date], income = incByDateAll[date] || 0;
+    return { date, hours, income, rate: income / hours, wd: weekdayIdx(date) };
+  });
+  const totalHours = days.reduce((s, d) => s + d.hours, 0);
+  const totalIncome = days.reduce((s, d) => s + d.income, 0);
+  const rate = totalHours > 0 ? totalIncome / totalHours : null;
+
+  const wd = WD_NAMES.map(() => ({ n: 0, hours: 0, income: 0 }));
+  const months = {};
+  days.forEach(d => {
+    wd[d.wd].n++; wd[d.wd].hours += d.hours; wd[d.wd].income += d.income;
+    const m = d.date.slice(0, 7);
+    if (!months[m]) months[m] = { n: 0, hours: 0, income: 0 };
+    months[m].n++; months[m].hours += d.hours; months[m].income += d.income;
+  });
+
+  const incomeDates = Object.keys(incByDateAll);
+  const noHoursDates = incomeDates.filter(d => !hoursByDate[d]).sort().reverse();
+  const zeroIncomeDays = days.filter(d => d.income === 0).length;
+
+  // Net estimat: cheltuielile din intervalul orelor înregistrate ÷ ore (doar dacă acoperirea e bună)
+  let net = null, opPerHour = null, coverage = null;
+  if (days.length) {
+    const from = days[0].date, to = days[days.length - 1].date;
+    const incInRange = Object.keys(incByDateAll).filter(d => d >= from && d <= to);
+    const withHours = incInRange.filter(d => hoursByDate[d]).length;
+    coverage = incInRange.length ? withHours / incInRange.length : 1;
+    if (coverage >= 0.8 && totalHours > 0) {
+      const opCost = vehicleFuels().filter(f => f.date >= from && f.date <= to).reduce((s, f) => s + f.totalPrice, 0)
+                   + vehicleExpenses().filter(e => e.date >= from && e.date <= to).reduce((s, e) => s + e.amount, 0);
+      opPerHour = opCost / totalHours;
+      net = rate - opPerHour;
+    }
+  }
+  return { days, totalHours, totalIncome, rate, wd, months, noHoursDates, incByDateAll, zeroIncomeDays, net, opPerHour, coverage };
+}
+
+function renderHoursPage() {
+  const sel = document.getElementById('hoursPeriodSel'); if (sel) sel.value = hoursPeriod;
+  const st = computeHoursStats(hoursPeriod);
+  const nDays = st.days.length;
+
+  // Carduri
+  const best = nDays ? st.days.reduce((a, b) => (b.rate > a.rate ? b : a)) : null;
+  const netCardSub = st.net !== null
+    ? 'după cheltuielile din perioadă (' + r1(st.opPerHour) + ' lei/oră)'
+    : (nDays ? 'completează orele zilelor cu venit' : 'nicio dată încă');
+  document.getElementById('hoursCards').innerHTML = `
+    <div class="card card-accent"><div class="card-label">Ore înregistrate</div>
+      <div class="card-value">${nDays ? r1(st.totalHours) : '0'} h</div>
+      <div class="card-sub">${nDays} zile · medie ${nDays ? r1(st.totalHours / nDays) : '—'} h/zi</div></div>
+    <div class="card card-green"><div class="card-label">Venit pe oră (brut)</div>
+      <div class="card-value">${st.rate !== null ? r1(st.rate) : '—'} lei</div>
+      <div class="card-sub">${nDays ? fmt(st.totalIncome) + ' lei în zilele cu ore' : 'adaugă ore lucrate'}</div></div>
+    <div class="card card-warn"><div class="card-label">Net estimat pe oră</div>
+      <div class="card-value" style="${st.net !== null && st.net < 0 ? 'color:var(--danger)' : ''}">${st.net !== null ? r1(st.net) + ' lei' : '— lei'}</div>
+      <div class="card-sub">${netCardSub}</div></div>
+    <div class="card"><div class="card-label">Cea mai bună zi</div>
+      <div class="card-value">${best ? r1(best.rate) + ' lei/h' : '—'}</div>
+      <div class="card-sub">${best ? fmtDate(best.date) + ' · ' + r1(best.hours) + ' h · ' + fmt(best.income) + ' lei' : ''}</div></div>`;
+
+  // Concluzii
+  const ins = [];
+  const rankedWd = st.wd.map((w, i) => ({ i, ...w, rate: w.hours > 0 ? w.income / w.hours : null })).filter(w => w.n >= MIN_N_WEEKDAY);
+  if (rankedWd.length >= 2) {
+    const bw = rankedWd.reduce((a, b) => (b.rate > a.rate ? b : a)), ww = rankedWd.reduce((a, b) => (b.rate < a.rate ? b : a));
+    const diff = ww.rate > 0 ? Math.round((bw.rate - ww.rate) / ww.rate * 100) : null;
+    ins.push(`📅 <strong>Cea mai profitabilă zi a săptămânii:</strong> ${WD_NAMES[bw.i]} (${r1(bw.rate)} lei/oră, ${bw.n} zile). <strong>Cea mai slabă:</strong> ${WD_NAMES[ww.i]} (${r1(ww.rate)} lei/oră, ${ww.n} zile)${diff !== null ? ' — diferență ' + diff + '%' : ''}.`);
+  } else {
+    ins.push(`📅 Pentru clasamentul zilelor săptămânii am nevoie de cel puțin ${MIN_N_WEEKDAY} zile înregistrate pentru fiecare zi a săptămânii (acum ${rankedWd.length} zile îndeplinesc condiția).`);
+  }
+  const rankedM = Object.keys(st.months).sort().map(m => ({ m, ...st.months[m], rate: st.months[m].income / st.months[m].hours })).filter(x => x.n >= MIN_N_MONTH);
+  if (rankedM.length >= 2) {
+    const bm = rankedM.reduce((a, b) => (b.rate > a.rate ? b : a)), wm = rankedM.reduce((a, b) => (b.rate < a.rate ? b : a));
+    const lab = m => MONTH_SHORT[parseInt(m.slice(5)) - 1] + ' ' + m.slice(0, 4);
+    ins.push(`🗓️ <strong>Cea mai bună lună:</strong> ${lab(bm.m)} (${r1(bm.rate)} lei/oră). <strong>Cea mai slabă:</strong> ${lab(wm.m)} (${r1(wm.rate)} lei/oră).`);
+  } else {
+    ins.push(`🗓️ Pentru clasamentul lunilor am nevoie de cel puțin ${MIN_N_MONTH} zile înregistrate în minimum două luni.`);
+  }
+  if (st.noHoursDates.length) ins.push(`ℹ️ ${st.noHoursDates.length} zile au venituri, dar fără ore înregistrate. Ele <strong>nu intră</strong> în statistici (folosește „Completează rapid" mai jos).`);
+  if (st.zeroIncomeDays) ins.push(`ℹ️ ${st.zeroIncomeDays} zile au ore, dar niciun venit înregistrat; sunt luate ca 0 lei. Verifică dacă nu lipsesc veniturile.`);
+  const thin = st.wd.map((w, i) => ({ i, n: w.n })).filter(w => w.n > 0 && w.n < MIN_N_WEEKDAY).map(w => WD_SHORT[w.i]);
+  if (thin.length) ins.push(`⚠️ Date puține pentru: ${thin.join(', ')} (sub ${MIN_N_WEEKDAY} zile); interpretează cu prudență, diferențele pot fi întâmplătoare.`);
+  if (st.net === null && nDays && st.coverage !== null && st.coverage < 0.8) ins.push(`ℹ️ Netul pe oră se afișează doar când ai ore pentru cel puțin 80% din zilele cu venit din interval (acum ${Math.round(st.coverage * 100)}%), altfel costurile ar fi raportate la prea puține ore.`);
+  document.getElementById('hoursInsights').innerHTML = nDays ? ins.map(x => `<div style="margin-bottom:6px">${x}</div>`).join('')
+    : '<div style="color:var(--muted)">Nicio oră înregistrată încă. Adaugă ore cu butonul de sus sau completează rapid pentru zilele deja cu venit.</div>';
+
+  // Grafic zile săptămână
+  const wdRates = st.wd.map(w => (w.hours > 0 ? w.income / w.hours : 0));
+  const maxW = Math.max(...wdRates, 1);
+  const rankedIdx = new Set(rankedWd.map(w => w.i));
+  let bestI = -1; rankedWd.forEach(w => { if (bestI < 0 || w.rate > wdRates[bestI]) bestI = w.i; });
+  document.getElementById('hoursWeekdayChart').innerHTML = nDays ? st.wd.map((w, i) => `
+    <div class="bar-col">
+      <div class="bar-val">${w.n ? Math.round(wdRates[i]) : '—'}</div>
+      <div class="bar" style="height:${w.n ? Math.max(wdRates[i] / maxW * 85, 3) : 3}%;background:${i === bestI ? 'var(--accent2)' : 'var(--accent)'};opacity:${w.n >= MIN_N_WEEKDAY ? 1 : 0.4}"></div>
+      <div class="bar-label">${WD_SHORT[i]}<br><span style="opacity:.7">${w.n} z</span></div>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:13px;margin:auto">Insuficiente date</div>';
+
+  // Grafic luni (ultimele 12)
+  const mKeys = Object.keys(st.months).sort().slice(-12);
+  const mRates = mKeys.map(m => st.months[m].income / st.months[m].hours);
+  const maxM = Math.max(...mRates, 1);
+  let bestM = -1; mKeys.forEach((m, i) => { if (st.months[m].n >= MIN_N_MONTH && (bestM < 0 || mRates[i] > mRates[bestM])) bestM = i; });
+  document.getElementById('hoursMonthChart').innerHTML = mKeys.length ? mKeys.map((m, i) => `
+    <div class="bar-col">
+      <div class="bar-val">${Math.round(mRates[i])}</div>
+      <div class="bar" style="height:${Math.max(mRates[i] / maxM * 85, 3)}%;background:${i === bestM ? 'var(--accent2)' : 'var(--accent)'};opacity:${st.months[m].n >= MIN_N_MONTH ? 1 : 0.4}"></div>
+      <div class="bar-label">${MONTH_SHORT[parseInt(m.slice(5)) - 1]}<br><span style="opacity:.7">${st.months[m].n} z</span></div>
+    </div>`).join('') : '<div style="color:var(--muted);font-size:13px;margin:auto">Insuficiente date</div>';
+
+  // Top / worst zile
+  const elig = st.days.filter(d => d.hours >= 2);
+  const dayRow = d => `<div class="expense-item"><div class="expense-info"><div class="expense-name">${fmtDate(d.date)} · ${WD_NAMES[d.wd]}</div>
+    <div class="expense-meta">${r1(d.hours)} h · ${fmt(d.income)} lei</div></div><div class="expense-amount">${r1(d.rate)} lei/h</div></div>`;
+  document.getElementById('hoursBestDays').innerHTML = elig.length ? elig.slice().sort((a, b) => b.rate - a.rate).slice(0, 5).map(dayRow).join('') : '<div class="empty-state">Fără date</div>';
+  document.getElementById('hoursWorstDays').innerHTML = elig.length ? elig.slice().sort((a, b) => a.rate - b.rate).slice(0, 5).map(dayRow).join('') : '<div class="empty-state">Fără date</div>';
+
+  // Completare rapidă
+  const qf = st.noHoursDates;
+  document.getElementById('hoursQuickCount').textContent = qf.length ? qf.length + ' zile fără ore' : '';
+  const shown = hoursQuickShowAll ? qf : qf.slice(0, 10);
+  document.getElementById('hoursQuickFill').innerHTML = qf.length ? shown.map(d => `
+    <div class="expense-item">
+      <div class="expense-info"><div class="expense-name">${fmtDate(d)} · ${WD_NAMES[weekdayIdx(d)]}</div><div class="expense-meta">venit ${fmt(st.incByDateAll[d])} lei</div></div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <input type="number" class="form-input" style="width:90px;padding:6px 8px" id="qf_${d}" placeholder="ore" step="0.25" min="0" max="24" onkeydown="if(event.key==='Enter')quickAddHours('${d}')">
+        <button class="btn btn-secondary btn-sm" onclick="quickAddHours('${d}')">Salvează</button>
+      </div>
+    </div>`).join('') + (qf.length > 10 ? `<div style="padding:12px 20px"><button class="btn btn-secondary btn-sm" onclick="hoursQuickShowAll=!hoursQuickShowAll;renderHoursPage()">${hoursQuickShowAll ? 'Arată mai puține' : 'Arată toate (' + qf.length + ')'}</button></div>` : '')
+    : '<div class="empty-state">Toate zilele cu venit au ore înregistrate. 👍</div>';
+
+  // Istoric ore
+  const shifts = vehicleShifts();
+  document.getElementById('hoursListCount').textContent = shifts.length + ' înregistrări';
+  document.getElementById('hoursList').innerHTML = shifts.length ? shifts.slice(0, 60).map(s => {
+    const day = st.days.find(d => d.date === s.date);
+    return `<div class="expense-item">
+      <div class="expense-dot" style="background:var(--accent)"></div>
+      <div class="expense-info"><div class="expense-name">⏱️ ${fmtDate(s.date)} · ${WD_NAMES[weekdayIdx(s.date)]} · ${r1(s.hours)} h${s.start && s.end ? ' (' + s.start + '–' + s.end + ')' : ''}</div>
+        <div class="expense-meta">${day ? 'ziua: ' + fmt(day.income) + ' lei · ' + r1(day.rate) + ' lei/oră' : 'în afara perioadei selectate'}</div></div>
+      <button class="expense-delete" title="Editează" aria-label="Editează" onclick="editRecord('shift','${s.id}')">✏️</button>
+        <button class="expense-delete" title="Șterge" aria-label="Șterge" onclick="deleteShift('${s.id}')">✕</button>
+    </div>`;
+  }).join('') + (shifts.length > 60 ? '<div class="empty-state" style="padding:14px">Se afișează ultimele 60 de înregistrări.</div>' : '')
+    : '<div class="empty-state">Nicio înregistrare de ore.</div>';
+}
+
+// ── DOCUMENTS (RCA, ITP, taxa de drum) ─────────────────────────
+const DOC_TYPES = {
+  rca:     { label: 'Asigurare RCA',         short: 'RCA',          icon: '🛡️', cat: 'insurance', months: 12 },
+  itp:     { label: 'Revizie tehnică (ITP)', short: 'ITP',          icon: '🔍', cat: 'tax',       months: 12 },
+  roadtax: { label: 'Taxa de drum',          short: 'Taxa de drum', icon: '🛣️', cat: 'tax',       months: 12 },
+  casco:   { label: 'Asigurare CASCO',       short: 'CASCO',        icon: '🛡️', cat: 'insurance', months: 12 },
+  other:   { label: 'Alt document',          short: 'Document',     icon: '📄', cat: 'other',     months: 12 }
+};
+const DOC_WARN_DAYS = 30;
+
+function escHtml(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fmtDate(d) { return d ? d.split('-').reverse().join('.') : ''; }
+function pad2(n) { return String(n).padStart(2, '0'); }
+
+function vehicleDocuments() {
+  return (state.documents || []).filter(d => d.vehicleId === state.activeVehicle).sort((a, b) => b.expiry.localeCompare(a.expiry));
+}
+function latestDocOfType(type) {
+  return vehicleDocuments().find(d => d.type === type) || null;
+}
+function docDaysLeft(expiry) {
+  const e = new Date(expiry + 'T00:00:00'), t = new Date(today() + 'T00:00:00');
+  return Math.round((e - t) / 86400000);
+}
+function docStatus(doc) {
+  const days = docDaysLeft(doc.expiry);
+  if (days < 0) return { days, key: 'expired', color: 'var(--danger)', text: 'Expirat de ' + Math.abs(days) + (Math.abs(days) === 1 ? ' zi' : ' zile') };
+  if (days === 0) return { days, key: 'soon', color: 'var(--warn)', text: 'Expiră astăzi' };
+  if (days <= DOC_WARN_DAYS) return { days, key: 'soon', color: 'var(--warn)', text: 'Expiră în ' + days + (days === 1 ? ' zi' : ' zile') };
+  return { days, key: 'ok', color: 'var(--accent2)', text: 'Valabil încă ' + days + ' zile' };
+}
+
+function docSyncDuration() {
+  const t = document.getElementById('dType');
+  const m = document.getElementById('dMonths');
+  if (!t || !m) return;
+  m.value = String((DOC_TYPES[t.value] || DOC_TYPES.other).months);
+  docAutoExpiry();
+}
+function docAutoExpiry() {
+  const start = document.getElementById('dStart')?.value;
+  const months = parseInt(document.getElementById('dMonths')?.value) || 12;
+  const out = document.getElementById('dExpiry');
+  if (!start || !out) return;
+  const d = new Date(start + 'T00:00:00');
+  d.setMonth(d.getMonth() + months);
+  d.setDate(d.getDate() - 1); // valabil până în ziua dinaintea aniversării
+  out.value = d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+}
+
+function saveDocument() {
+  const type = document.getElementById('dType').value;
+  const start = document.getElementById('dStart').value;
+  const expiry = document.getElementById('dExpiry').value;
+  const cost = parseFloat(document.getElementById('dCost').value) || 0;
+  const notes = document.getElementById('dNotes').value.trim();
+  const addExpense = document.getElementById('dAddExpense').checked;
+  if (!start || !expiry) { alert('Completează data începerii și data expirării!'); return; }
+  if (expiry < start) { alert('Data expirării nu poate fi înaintea datei de început!'); return; }
+  if (!state.documents) state.documents = [];
+  const info = DOC_TYPES[type] || DOC_TYPES.other;
+  const curDoc = _editId && state.documents.find(x => x.id === _editId);
+  const id = curDoc ? curDoc.id : uid();
+  if (curDoc) Object.assign(curDoc, { type, start, expiry, cost, notes });
+  else state.documents.push({ id, vehicleId: state.activeVehicle, type, start, expiry, cost, notes });
+  const desc = info.label + (notes ? ' · ' + notes : '') + ' (până la ' + fmtDate(expiry) + ')';
+  const linked = state.expenses.find(x => x.docId === id);
+  if (cost > 0 && addExpense) {
+    if (linked) Object.assign(linked, { date: start, category: info.cat, description: desc, amount: cost });
+    else state.expenses.push({ id: uid(), vehicleId: state.activeVehicle, date: start, category: info.cat, description: desc, amount: cost, odometer: null, docId: id });
+  } else if (linked) {
+    state.expenses = state.expenses.filter(x => x.docId !== id); // costul a fost scos sau debifat
+  }
+  save(); closeModal(); renderDocumentsPage(); renderDashboard();
+}
+
+function deleteDocument(id) {
+  const linked = state.expenses.some(e => e.docId === id);
+  if (!confirm('Ștergi acest document' + (linked ? ' și cheltuiala asociată din Cheltuieli' : '') + '?')) return;
+  state.documents = (state.documents || []).filter(d => d.id !== id);
+  state.expenses = state.expenses.filter(e => e.docId !== id);
+  save(); renderDocumentsPage(); renderDashboard();
+}
+
+function renderDocumentsPage() {
+  const docs = vehicleDocuments();
+  const present = new Set(docs.map(d => d.type));
+  const shown = ['rca', 'itp', 'roadtax'].concat(['casco', 'other'].filter(t => present.has(t)));
+
+  document.getElementById('docStatusCards').innerHTML = shown.map(t => {
+    const info = DOC_TYPES[t];
+    const d = latestDocOfType(t);
+    if (!d) {
+      return `<div class="card" style="border-top:3px solid var(--border)">
+        <div class="card-label">${info.icon} ${info.short}</div>
+        <div class="card-value" style="font-size:18px;color:var(--muted)">Neînregistrat</div>
+        <div class="card-sub"><a href="#" style="color:var(--accent);text-decoration:none" onclick="event.preventDefault();openModal('document');document.getElementById('dType').value='${t}';docSyncDuration()">+ adaugă acum</a></div>
+      </div>`;
+    }
+    const st = docStatus(d);
+    return `<div class="card" style="border-top:3px solid ${st.color}">
+      <div class="card-label">${info.icon} ${info.short}</div>
+      <div class="card-value" style="font-size:18px;color:${st.color}">${st.text}</div>
+      <div class="card-sub">până la ${fmtDate(d.expiry)}${d.cost ? ' · ' + fmt(d.cost) + ' lei' : ''}</div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('docCount').textContent = docs.length + ' înregistrări';
+  const el = document.getElementById('docList');
+  if (!docs.length) { el.innerHTML = '<div class="empty-state">Niciun document. Adaugă RCA, ITP sau taxa de drum ca să primești alerte înainte de expirare.</div>'; return; }
+  const latestIds = new Set(Object.keys(DOC_TYPES).map(t => (latestDocOfType(t) || {}).id).filter(Boolean));
+  el.innerHTML = docs.map(d => {
+    const info = DOC_TYPES[d.type] || DOC_TYPES.other;
+    const st = docStatus(d);
+    const isCurrent = latestIds.has(d.id);
+    const badge = isCurrent
+      ? `<span style="font-size:12px;padding:2px 8px;border-radius:20px;background:${st.key === 'ok' ? 'rgba(109,213,168,.15)' : st.key === 'soon' ? 'rgba(245,166,35,.15)' : 'rgba(224,92,110,.15)'};color:${st.color}">${st.text}</span>`
+      : `<span style="font-size:12px;color:var(--muted)">arhivat</span>`;
+    return `<div class="expense-item">
+      <div class="expense-dot" style="background:${isCurrent ? st.color : 'var(--muted)'}"></div>
+      <div class="expense-info">
+        <div class="expense-name">${info.icon} ${info.label}${d.notes ? ' · ' + escHtml(d.notes) : ''}</div>
+        <div class="expense-meta">${fmtDate(d.start)} → ${fmtDate(d.expiry)} &nbsp; ${badge}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <div class="expense-amount">${d.cost ? fmt(d.cost) + ' lei' : '—'}</div>
+        <button class="expense-delete" title="Editează" aria-label="Editează" onclick="editRecord('document','${d.id}')">✏️</button>
+        <button class="expense-delete" title="Șterge" aria-label="Șterge" onclick="deleteDocument('${d.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function renderDocAlert() {
+  const banner = document.getElementById('docAlert');
+  if (!banner) return;
+  const issues = [];
+  ['rca', 'itp', 'roadtax', 'casco'].forEach(t => {
+    const d = latestDocOfType(t);
+    if (!d) return;
+    const st = docStatus(d);
+    if (st.key !== 'ok') issues.push(`<strong>${DOC_TYPES[t].short}</strong>: ${st.text.toLowerCase()} (${fmtDate(d.expiry)})`);
+  });
+  if (!issues.length) { banner.classList.add('hidden'); return; }
+  banner.classList.remove('hidden');
+  document.getElementById('docAlertText').innerHTML = issues.join(' &nbsp;·&nbsp; ');
+}
+
+// ── EXPORT ─────────────────────────────────────────────────────
+const APP_VERSION = '2026.11.09-6';
+function isIOS() { return /iPhone|iPad|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+
+// Pe iPhone folosim meniul de partajare (Salvează în Fișiere, AirDrop, WhatsApp...), fiindcă
+// descărcările directe din aplicațiile adăugate pe ecranul principal sunt nesigure. Pe calculator: descărcare normală.
+async function shareOrDownload(filename, mime, content) {
+  try {
+    if (isIOS() && typeof File === 'function' && navigator.canShare) {
+      const file = new File([content], filename, { type: mime });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: filename });
+        return true;
+      }
+    }
+  } catch (e) {
+    if (e && e.name === 'AbortError') return false; // ai închis meniul de partajare
+  }
+  const url = URL.createObjectURL(new Blob([content], { type: mime }));
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+  return true;
+}
+
+function csvCell(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
+function exportCSV() {
+  const rows = [['Tip','Data','Odometru/Km','Litri','Pret/L','Total','Descriere','Categorie']];
+  vehicleFuels().forEach(f => rows.push(['Alimentare', f.date, f.odometer, f.liters, f.pricePerLiter, f.totalPrice, f.station || '', 'combustibil']));
+  vehicleExpenses().forEach(e => rows.push(['Cheltuiala', e.date, e.odometer || '', '', '', e.amount, e.description, e.category]));
+  vehicleIncomes().forEach(i => rows.push(['Venit', i.date, i.km || '', '', '', i.amount, i.description, i.category]));
+  vehicleShifts().forEach(s => rows.push(['Ore', s.date, '', '', '', '', s.hours + ' h' + (s.start && s.end ? ' (' + s.start + '-' + s.end + ')' : ''), 'ore']));
+  const csv = '﻿' + rows.map(r => r.map(csvCell).join(',')).join('\r\n');
+  return shareOrDownload('autotrack_export.csv', 'text/csv;charset=utf-8', csv);
+}
+async function exportBackup() {
+  const payload = JSON.stringify({ app: 'autotrack', version: 2, exportedAt: new Date().toISOString(), data: state }, null, 2);
+  const ok = await shareOrDownload('autotrack_backup_' + today() + '.json', 'application/json', payload);
+  if (ok) { state.settings.lastBackupAt = new Date().toISOString(); state.settings.backupSnoozeUntil = ''; save(); }
+  return ok;
+}
+
+// Memento backup: pe telefon datele stau doar în browser, deci un backup regulat contează
+function backupNudgeNeeded() {
+  const records = state.fuels.length + state.expenses.length + (state.incomes || []).length + (state.shifts || []).length + (state.documents || []).length;
+  if (records < 5) return null;
+  const snooze = state.settings.backupSnoozeUntil;
+  if (snooze && snooze > new Date().toISOString()) return null;
+  const last = state.settings.lastBackupAt;
+  if (!last) return { text: 'Nu ai făcut încă niciun backup al datelor.' };
+  const days = Math.floor((Date.now() - new Date(last).getTime()) / 86400000);
+  return days >= 14 ? { text: 'Ultimul backup a fost acum ' + days + ' zile.' } : null;
+}
+function renderBackupNudge() {
+  const el = document.getElementById('backupNudge');
+  if (!el) return;
+  const n = backupNudgeNeeded();
+  el.innerHTML = n ? `<div class="alert-banner" style="justify-content:space-between;flex-wrap:wrap;gap:10px">
+      <div style="display:flex;align-items:center;gap:12px"><span style="font-size:20px">💾</span><div><strong>Fă un backup.</strong> ${n.text}</div></div>
+      <div style="display:flex;gap:8px"><button class="btn btn-primary btn-sm" onclick="exportBackup()">Backup acum</button><button class="btn btn-secondary btn-sm" onclick="snoozeBackupNudge()">Mai târziu</button></div>
+    </div>` : '';
+}
+function snoozeBackupNudge() {
+  state.settings.backupSnoozeUntil = new Date(Date.now() + 3 * 86400000).toISOString();
+  save();
+}
+
+function importBackup(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      const data = parsed && parsed.data ? parsed.data : parsed;
+      if (!data || !Array.isArray(data.vehicles) || !Array.isArray(data.fuels) || !Array.isArray(data.expenses)) {
+        throw new Error('Fișierul nu pare un backup AutoTrack valid.');
+      }
+      if (!confirm('Restaurarea înlocuiește datele curente cu cele din backup (' + data.fuels.length + ' alimentări, ' + data.expenses.length + ' cheltuieli, ' + (data.incomes || []).length + ' venituri). Continui?')) return;
+      state = {
+        vehicles: data.vehicles,
+        activeVehicle: data.activeVehicle || (data.vehicles[0] && data.vehicles[0].id) || null,
+        fuels: data.fuels,
+        expenses: data.expenses,
+        incomes: data.incomes || [],
+        documents: data.documents || [],
+        shifts: data.shifts || [],
+        settings: { oilInterval: 10000, lastOilKm: 0, ...(data.settings || {}) }
+      };
+      if (parsed && parsed.exportedAt) state.settings.lastBackupAt = parsed.exportedAt; // după restaurare nu mai insista cu backup
+      save();
+      populateVehicleSelect();
+      renderDashboard();
+      alert('Backup restaurat cu succes.');
+    } catch (err) {
+      alert('Eroare la restaurare: ' + err.message);
+    }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+function clearData() {
+  if (!confirm('Ștergi TOATE datele? Această acțiune nu poate fi anulată!')) return;
+  if (!confirm('Ești sigur? Toate alimentările și cheltuielile vor fi șterse.')) return;
+  state.fuels = []; state.expenses = []; state.incomes = []; state.documents = []; state.shifts = []; save(); renderDashboard();
+}
+
+// ── DRIVVO IMPORT ──────────────────────────────────────────────
+let drivvoParsed = null;
+
+function drivvoDragOver(e) { e.preventDefault(); document.getElementById('drivvoDropZone').style.borderColor = 'var(--accent)'; document.getElementById('drivvoDropZone').style.background = 'rgba(79,142,247,.05)'; }
+function drivvoDragLeave(e) { document.getElementById('drivvoDropZone').style.borderColor = 'var(--border)'; document.getElementById('drivvoDropZone').style.background = ''; }
+function drivvoDrop(e) { e.preventDefault(); drivvoDragLeave(e); const f = e.dataTransfer.files[0]; if (f) drivvoHandleFile(f); }
+
+function drivvoHandleFile(file) {
+  if (!file || !file.name.endsWith('.csv')) { drivvoStatus('error', 'Selectează un fișier .csv exportat din Drivvo.'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try { drivvoParsed = drivvoParseCSV(e.target.result); drivvoShowPreview(drivvoParsed); }
+    catch(err) { drivvoStatus('error', 'Eroare la citire: ' + err.message); }
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+function drivvoParseCSV(text) {
+  const lines = text.split('\n').map(l => l.trim()).filter(l => l);
+  let section = null;
+  const vehicle = {};
+  const fuels = [], expenses = [], incomes = [], services = [];
+
+  function parseRow(line) {
+    const result = []; let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { inQ = !inQ; }
+      else if (c === ',' && !inQ) { result.push(cur.trim()); cur = ''; }
+      else { cur += c; }
+    }
+    result.push(cur.trim());
+    return result;
+  }
+
+  for (const line of lines) {
+    if (line.startsWith('##')) { section = line.replace('##', '').trim().toLowerCase(); continue; }
+    if (line.startsWith('"Odometer') || line.startsWith('"Name') || line.startsWith('"Date')) continue;
+    const row = parseRow(line);
+    if (!row.length || row[0] === '') continue;
+
+    if (section === 'vehicle') {
+      vehicle.name = row[0] || 'Vehicul importat';
+      vehicle.model = row[1] || '';
+      vehicle.plate = row[2] || '';
+      vehicle.year = row[4] || '';
+    }
+    else if (section === 'refuelling') {
+      const odo = parseInt(row[0]), date = row[1] ? row[1].slice(0,10) : '';
+      const ppl = parseFloat(row[3])||0, total = parseFloat(row[4])||0, liters = parseFloat(row[5])||0;
+      const station = row[18] || '';
+      if (odo && date && total > 0) fuels.push({ id: uid(), vehicleId: '__REPLACE__', date, odometer: odo, liters, pricePerLiter: ppl, totalPrice: total, station });
+    }
+    else if (section === 'expense') {
+      const odo = parseInt(row[0]), date = row[1] ? row[1].slice(0,10) : '';
+      const amount = parseFloat(row[2])||0, type = row[3]||'other', location = row[4]||'';
+      if (date && amount > 0) {
+        const t = type.toLowerCase();
+        let cat = 'other';
+        if (t.includes('insurance')) cat = 'insurance';
+        else if (t.includes('registration')||t.includes('tolls')||t.includes('fine')) cat = 'tax';
+        else if (t.includes('tow')||t.includes('repair')) cat = 'service';
+        expenses.push({ id: uid(), vehicleId: '__REPLACE__', date, category: cat, description: type + (location ? ' · '+location : ''), amount, odometer: odo||null });
+      }
+    }
+    else if (section === 'incomes') {
+      const odo = parseInt(row[0]), date = row[1] ? row[1].slice(0,10) : '';
+      const amount = parseFloat(row[2])||0, type = row[3]||'Ride';
+      if (date && amount > 0) {
+        const t = type.toLowerCase();
+        let cat = 'ridesharing';
+        if (t.includes('deliver')||t.includes('livrari')) cat = 'livrari';
+        else if (t.includes('rent')||t.includes('inchir')) cat = 'inchiriere';
+        else if (t.includes('accident')||t.includes('accidente')) cat = 'altele';
+        incomes.push({ id: uid(), vehicleId: '__REPLACE__', date, category: cat, description: type, amount, km: odo||null });
+      }
+    }
+    else if (section === 'service') {
+      const odo = parseInt(row[0]), date = row[1] ? row[1].slice(0,10) : '';
+      const amount = parseFloat(row[2])||0, type = row[3]||'Service';
+      const location = row[4]||'', notes = row[7]||'';
+      if (date && amount > 0) {
+        const desc = type + (location ? ' · '+location : '') + (notes ? ' — '+notes : '');
+        expenses.push({ id: uid(), vehicleId: '__REPLACE__', date, category: 'service', description: desc, amount, odometer: odo||null });
+      }
+    }
+  }
+  return { vehicle, fuels, expenses, incomes };
+}
+
+function drivvoShowPreview(data) {
+  const fuelCost = data.fuels.reduce((s,f) => s+f.totalPrice, 0);
+  const expCost = data.expenses.reduce((s,e) => s+e.amount, 0);
+  const incTotal = data.incomes.reduce((s,i) => s+i.amount, 0);
+  const profit = incTotal - fuelCost - expCost;
+  document.getElementById('drivvoPreviewContent').innerHTML = `
+    <div style="font-weight:600;margin-bottom:10px">📋 Date detectate:</div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span>🚗 Vehicul</span><span>${data.vehicle.name} ${data.vehicle.model} ${data.vehicle.year}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span>⛽ Alimentări</span><span style="color:var(--accent)">${data.fuels.length} înreg. · ${fmt(fuelCost)} lei</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span>💳 Cheltuieli</span><span style="color:var(--warn)">${data.expenses.length} înreg. · ${fmt(expCost)} lei</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border)"><span>💵 Venituri</span><span style="color:var(--accent2)">${data.incomes.length} înreg. · ${fmt(incTotal)} lei</span></div>
+    <div style="display:flex;justify-content:space-between;padding:5px 0;font-weight:600"><span>💰 Profit net</span><span style="color:${profit>=0?'var(--accent2)':'var(--danger)'}">${fmt(profit)} lei</span></div>`;
+  document.getElementById('drivvoPreview').style.display = 'block';
+  document.getElementById('drivvoStatus').style.display = 'none';
+}
+
+function drivvoDoImport() {
+  if (!drivvoParsed) return;
+  const btn = document.getElementById('drivvoImportBtn');
+  btn.disabled = true; btn.textContent = '⏳ Se importă...';
+  try {
+    const veh = drivvoParsed.vehicle;
+    let vehicleId = 'drivvo_' + (veh.plate || uid());
+    const existing = state.vehicles.find(v => v.name && v.name.includes(veh.name));
+    if (existing) { vehicleId = existing.id; }
+    else {
+      state.vehicles.push({ id: vehicleId, name: veh.name + (veh.plate ? ' ('+veh.plate+')' : ''), make: veh.name, model: veh.model, year: parseInt(veh.year)||2017, fuel: 'Benzină' });
+      state.activeVehicle = vehicleId;
+    }
+
+    if (!state.incomes) state.incomes = [];
+
+    const fuelKeys = new Set(state.fuels.map(f => f.date+'_'+f.odometer));
+    const expKeys = new Set(state.expenses.map(e => e.date+'_'+e.amount+'_'+(e.description||'')));
+    const incKeys = new Set(state.incomes.map(i => i.date+'_'+i.amount+'_'+(i.km||'')));
+
+    let aF=0, aE=0, aI=0;
+    drivvoParsed.fuels.forEach(f => { const k=f.date+'_'+f.odometer; if(!fuelKeys.has(k)){state.fuels.push({...f,vehicleId});fuelKeys.add(k);aF++;} });
+    drivvoParsed.expenses.forEach(e => { const k=e.date+'_'+e.amount+'_'+(e.description||''); if(!expKeys.has(k)){state.expenses.push({...e,vehicleId});expKeys.add(k);aE++;} });
+    drivvoParsed.incomes.forEach(i => { const k=i.date+'_'+i.amount+'_'+(i.km||''); if(!incKeys.has(k)){state.incomes.push({...i,vehicleId});incKeys.add(k);aI++;} });
+
+    save();
+    drivvoStatus('success', `✅ Import finalizat! Adăugate: ${aF} alimentări · ${aE} cheltuieli · ${aI} venituri. Navighează la Dashboard pentru a vedea datele.`);
+    document.getElementById('drivvoPreview').style.display = 'none';
+    populateVehicleSelect();
+    renderDashboard();
+  } catch(err) {
+    drivvoStatus('error', 'Eroare: ' + err.message);
+    btn.disabled = false; btn.textContent = '⚡ Importă acum';
+  }
+}
+
+function drivvoStatus(type, msg) {
+  const el = document.getElementById('drivvoStatus');
+  el.style.display = 'block';
+  el.style.background = type === 'success' ? 'rgba(109,213,168,.1)' : 'rgba(224,92,110,.1)';
+  el.style.border = '1px solid ' + (type === 'success' ? 'rgba(109,213,168,.3)' : 'rgba(224,92,110,.3)');
+  el.style.color = type === 'success' ? 'var(--accent2)' : 'var(--danger)';
+  el.textContent = msg;
+}
+
+// ── UTILS ──────────────────────────────────────────────────────
+function fmt(n) { return Number(n).toLocaleString('ro', { minimumFractionDigits: 0, maximumFractionDigits: 2 }); }
+function fmt0(n) { return Number(n).toLocaleString('ro', { maximumFractionDigits: 0 }); }
+// data locală (nu UTC), ca „Azi" să fie corect și după miezul nopții
+function today() { const d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+// pentru ture: înainte de ora 6 dimineața, tura a început de obicei în ziua precedentă
+function shiftDefaultDate() { return new Date().getHours() < 6 ? dateMinusDays(1) : today(); }
+function catColor(c) { return { service: 'var(--service)', insurance: 'var(--insurance)', tax: 'var(--other)', other: 'var(--muted)' }[c] || 'var(--muted)'; }
+function catLabel(c) { return { service: 'Service', insurance: 'Asigurare', tax: 'Taxe', other: 'Altele' }[c] || c; }
+function catIcon(c) { return { service: '🔧', insurance: '🛡️', tax: '📋', other: '💰' }[c] || '💳'; }
+
+// ── INIT ───────────────────────────────────────────────────────
+load();
+
+// curățenie unică: elimină eventualele cheltuieli „tranșă achiziție" adăugate greșit de o versiune veche
+// (prețul mașinii se ține doar în Setări; costul de achiziție nu se dublează la Cheltuieli)
+(function cleanupLegacy() {
+  const before = (state.expenses || []).length;
+  state.expenses = (state.expenses || []).filter(e => !e.description || !e.description.includes('Achiziție Ford Fusion — tranșă'));
+  if (state.expenses.length !== before) save();
+})();
+
+renderDashboard();
+
+// instalare / offline + stocare persistentă (doar pe HTTPS)
+try {
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === '127.0.0.1' || location.hostname === 'localhost')) navigator.serviceWorker.register('sw.js').catch(() => {});
+  if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+} catch (e) {}
+</script>
+</body>
+</html>
